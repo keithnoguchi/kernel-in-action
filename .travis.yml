@@ -1,0 +1,33 @@
+---
+language: c
+compiler: gcc
+os: linux
+dist: trusty
+sudo: required
+# https://blog.travis-ci.com/2017-06-19-trusty-updates-2017-Q2
+# for the new trusty image.
+group: edge
+env:
+  matrix:
+    # Ubuntu 14.04
+    - CI_UBUNTU=1
+    # ArchLinux https://github.com/mikkeloscar/arch-travis/blob/master/README.md
+    - CI_ARCHLINUX=1 ARCH_TRAVIS_ARCH=x86_64 ARCH_TRAVIS_CLEAN_CHROOT=1 ARCH_TRAVIS_CONFIRM_YES=1
+arch:
+  repos:
+    - archlinuxfr=http://repo.archlinux.fr/$arch
+  packages:
+    - linux
+    - linux-headers
+  script:
+    - KERNDIR=$(ls -d /lib/modules/*-ARCH|head -1)/build make
+script:
+  - |
+    if [ "${CI_UBUNTU}"    != "" ]; then
+      sudo apt install linux-headers-$(uname -r) && make
+    fi
+  - |
+    if [ "${CI_ARCHLINUX}" != "" ]; then
+      URL=raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh
+      curl -s https://${URL}|bash
+    fi
