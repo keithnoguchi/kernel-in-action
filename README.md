@@ -28,8 +28,9 @@ air1$
 ## Load
 
 ```sh
-air1$ sudo insmod ./ps/ps.ko
-[ 1421.464189] ps_init()
+air1$ sudo insmod ps/ps.ko
+[ 2821.847109] ps_init()
+[ 2821.847470] swapper/0[0]
 air1$
 ```
 

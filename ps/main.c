@@ -4,6 +4,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
+#include <linux/init_task.h>
 
 static int __init ps_init(void)
 {
@@ -17,6 +18,11 @@ static int __init ps_init(void)
 		task = list_entry(list, struct task_struct, sibling);
 		printk("%s[%d]\n", task->comm, task->pid);
 	}
+
+	/* look and print the origin of all the processes */
+	for (task = current; task != &init_task; task = task->parent)
+		;
+	printk("%s[%d]\n", task->comm, task->pid);
 	return 0;
 }
 module_init(ps_init);
