@@ -25,4 +25,4 @@ module_exit(ps_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
-MODULE_DESCRIPTION("listing all the process");
+MODULE_DESCRIPTION("listing all the processes");
