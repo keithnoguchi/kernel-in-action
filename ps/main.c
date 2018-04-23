@@ -1,10 +1,22 @@
+#include <linux/types.h>
+#include <linux/list.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 
 static int __init ps_init(void)
 {
+	struct task_struct *task;
+	struct list_head *list;
+
 	pr_info("%s()\n", __FUNCTION__);
+
+	/* list all the children */
+	list_for_each(list, &current->children) {
+		task = list_entry(list, struct task_struct, sibling);
+		printk("%s[%d]\n", task->comm, task->pid);
+	}
 	return 0;
 }
 module_init(ps_init);
