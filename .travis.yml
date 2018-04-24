@@ -10,7 +10,11 @@ group: edge
 env:
   matrix:
     # Ubuntu 14.04
-    - CI_UBUNTU=1
+    #
+    # Disabled due to the missing <linux/sched/signal.h> for
+    # for_each_process()@ps/main.c.
+    #
+    #- CI_UBUNTU=1
     # ArchLinux https://github.com/mikkeloscar/arch-travis/blob/master/README.md
     - CI_ARCHLINUX=1 ARCH_TRAVIS_ARCH=x86_64 ARCH_TRAVIS_CLEAN_CHROOT=1 ARCH_TRAVIS_CONFIRM_YES=1
 arch:
