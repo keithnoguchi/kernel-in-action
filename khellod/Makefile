@@ -1,5 +1,5 @@
-obj-m += ps/
-obj-m += khellod/
+obj-m += khellod.o
+khellod-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
