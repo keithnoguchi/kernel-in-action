@@ -27,6 +27,10 @@ air1$
 
 ## Load
 
+### Process status
+
+[ps.ko](ps/main.c) module is the classic ps command inside kernel:
+
 ```sh
 air1$ sudo insmod ps/ps.ko
 [ 3467.251298] systemd[1]
@@ -99,6 +103,24 @@ air1$ sudo insmod ps/ps.ko
 [ 3467.287791] sudo[9765]
 [ 3467.288230] insmod[9766]
 air1$
+```
+
+### Hello world!
+
+[khellod.ko](khellod/main.c) module is the classic hello world kernel thread:
+
+```sh
+air1$ sudo insmod khellod/khellod.ko
+[ 9151.462539] khellod_init
+[ 9151.464501] Hello world!
+[ 9152.478305] Hello world!
+[ 9153.491636] Hello world!
+[ 9154.504930] Hello world!
+[ 9155.518379] Hello world!
+[ 9156.531786] Hello world!
+[ 9157.545049] Hello world!
+air1$ sudo rmmod khellod
+[ 9158.342860] khellod_exit
 ```
 
 ## Unload
