@@ -7,16 +7,19 @@
 
 /* khellod kthread. */
 static struct task_struct *khellod;
+static char *msg = "Hello world!";
 
 /* Print out the hello world every 1 sec. */
 #define KHELLOD_INTERVAL                (1*HZ)
 static unsigned long khellod_interval = KHELLOD_INTERVAL;
 
-static int hellod(void *unused)
+static int hellod(void *data)
 {
+	const char *msg = data;
+
 	/* print hello world! every khellod_interval forever */
 	for (;;) {
-		printk("hello world!\n");
+		printk("%s\n", msg);
 
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule_timeout(khellod_interval);
@@ -30,7 +33,7 @@ static int __init khellod_init(void)
 {
 	pr_info("%s\n", __FUNCTION__);
 
-	khellod = kthread_run(hellod, NULL, "khellod");
+	khellod = kthread_run(hellod, msg, "khellod");
 	if (IS_ERR(khellod))
 		return PTR_ERR(khellod);
 
