@@ -11,19 +11,15 @@
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
 
+#define NR_SCULL_DEV       4
 #define SCULL_DEV_PREFIX   "scull"
 #define SCULL_DEV_NAME_LEN (strlen(SCULL_DEV_PREFIX) + 2)
-#define NR_SCULL_DEV       4
 
-/* scull device driver. */
-struct scull {
+/* scull device descriptor. */
+static struct scull {
 	struct device dev;
 	struct cdev cdev;
-};
-
-/* Global variables.  Will try to clean those up. */
-const char *scull_dev_name = SCULL_DEV_PREFIX;
-static struct scull sculls[NR_SCULL_DEV];
+} sculls[NR_SCULL_DEV];
 
 /* File operations. */
 static struct file_operations fops = {
@@ -33,14 +29,14 @@ static struct file_operations fops = {
 static int __init scull_init(void)
 {
 	const int nr_dev = ARRAY_SIZE(sculls);
+	char buf[SCULL_DEV_NAME_LEN];
 	dev_t dev_base;
 	struct scull *s;
-	char buf[SCULL_DEV_NAME_LEN];
 	int i, j;
 	int err;
 
 	/* allocate char device number region */
-	err = alloc_chrdev_region(&dev_base, 0, nr_dev, scull_dev_name);
+	err = alloc_chrdev_region(&dev_base, 0, nr_dev, SCULL_DEV_PREFIX);
 	if (err)
 		return err;
 
@@ -48,7 +44,7 @@ static int __init scull_init(void)
 	for (s = sculls, i = 0; i < nr_dev; s++, i++) {
 		device_initialize(&s->dev);
 		s->dev.devt = MKDEV(MAJOR(dev_base), MINOR(dev_base) + i);
-		sprintf(buf, "%s%d", scull_dev_name, i);
+		sprintf(buf, SCULL_DEV_PREFIX "%d", i);
 		s->dev.init_name = buf;
 		cdev_init(&s->cdev, &fops);
 		s->cdev.owner = THIS_MODULE;
