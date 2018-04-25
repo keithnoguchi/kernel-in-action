@@ -3,21 +3,25 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/printk.h>
+#include <linux/device.h>
+#include <linux/err.h>
 #include <linux/fs.h>
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
 
-static dev_t dev_number_base;
-const char *scull_dev_name = "scull";
-static const int nr_dev = 1;
-
+/* scull device driver. */
 struct scull {
 	struct cdev cdev;
 };
 
-/* scull device driver instance array. */
+/* Global variables.  Will try to clean those up. */
+static dev_t dev_number_base;
+static struct class *cls = NULL;
+const char *scull_dev_name = "scull";
+static const int nr_dev = 1;
 static struct scull sculls[1];
 
+/* File operations. */
 static struct file_operations fops = {
 	.owner = THIS_MODULE,
 };
@@ -36,6 +40,10 @@ static int __init scull_init(void)
 		return err;
 	pr_info("MAJOR=%d, MINOR=%d\n", MAJOR(dev_number_base),
 		MINOR(dev_number_base));
+
+	cls = class_create(THIS_MODULE, scull_dev_name);
+	if (IS_ERR(cls))
+		return PTR_ERR(cls);
 
 	/* initialize and add it to the char subsystem */
 	dev = &sculls[idx];
@@ -60,6 +68,8 @@ static void __exit scull_exit(void)
 	pr_info("%s\n", __FUNCTION__);
 	dev = &sculls[idx];
 	cdev_del(&dev->cdev);
+	if (!IS_ERR_OR_NULL(cls))
+		class_destroy(cls);
 	unregister_chrdev_region(dev_number_base, nr_dev);
 }
 module_exit(scull_exit);
