@@ -11,8 +11,9 @@
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
 
-#define SCULL_DEV_PREFIX  "scull"
-#define NR_SCULL_DEV      4
+#define SCULL_DEV_PREFIX   "scull"
+#define SCULL_DEV_NAME_LEN (strlen(SCULL_DEV_PREFIX) + 2)
+#define NR_SCULL_DEV       4
 
 /* scull device driver. */
 struct scull {
@@ -34,7 +35,7 @@ static int __init scull_init(void)
 	const int nr_dev = ARRAY_SIZE(sculls);
 	dev_t dev_base;
 	struct scull *s;
-	char buf[16];
+	char buf[SCULL_DEV_NAME_LEN];
 	int i, j;
 	int err;
 
