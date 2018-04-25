@@ -6,12 +6,14 @@
 #include <linux/string.h>
 #include <linux/device.h>
 #include <linux/kernel.h>
+#include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/fs.h>
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
 
 #define NR_SCULL_DEV		4
+#define NR_SCULL_QSET           1000
 #define SCULL_DEV_PREFIX	"scull"
 #define SCULL_DEV_NAME_LEN	(strlen(SCULL_DEV_PREFIX) + 2)
 
@@ -19,12 +21,55 @@
 static struct scull {
 	struct device		dev;
 	struct cdev		cdev;
+	struct scull_qset	*data;
+	int			qset;
 } sculls[NR_SCULL_DEV];
+
+/* quantum set. */
+struct scull_qset {
+	void			**data;
+	struct scull_qset	*next;
+};
+
+/* quantum set size. */
+static int scull_qset = NR_SCULL_QSET;
+
+static void scull_trim(struct scull *s)
+{
+	struct scull_qset *next, *dptr;
+	int qset = s->qset;
+	int i;
+
+	pr_info("%s\n", __FUNCTION__);
+
+	for (dptr = s->data; dptr; dptr = next) {
+		if (dptr->data) {
+			for (i = 0; i < qset; i++)
+				kfree(dptr->data[i]);
+			kfree(dptr->data);
+			dptr->data = NULL;
+		}
+		next = dptr->next;
+		kfree(dptr);
+	}
+	s->qset = scull_qset;
+	s->data = NULL;
+}
 
 /* File operations. */
 static int scull_open(struct inode *i, struct file *f)
 {
+	struct scull *s = container_of(i->i_cdev, struct scull, cdev);
+
 	pr_info("%s\n", __FUNCTION__);
+
+	/* for read/write */
+	f->private_data = s;
+
+	/* trim the device when it was opened write-only */
+	if ((f->f_flags & O_ACCMODE) == O_WRONLY)
+		scull_trim(s);
+
 	return 0;
 }
 
@@ -46,7 +91,7 @@ static int scull_release(struct inode *i, struct file *f)
 	return 0;
 }
 
-static struct file_operations fops = {
+static struct file_operations scull_fops = {
 	.owner = THIS_MODULE,
 	.open = scull_open,
 	.read = scull_read,
@@ -54,10 +99,20 @@ static struct file_operations fops = {
 	.release = scull_release,
 };
 
+static void scull_initialize(struct scull *s, dev_t devt, const char *name)
+{
+	device_initialize(&s->dev);
+	s->dev.devt = devt;
+	s->dev.init_name = name;
+	cdev_init(&s->cdev, &scull_fops);
+	s->cdev.owner = THIS_MODULE;
+	s->qset = scull_qset;
+	s->data = NULL;
+}
+
 static int __init scull_init(void)
 {
 	const int nr_dev = ARRAY_SIZE(sculls);
-	char buf[SCULL_DEV_NAME_LEN];
 	dev_t dev_base;
 	struct scull *s;
 	int i, j;
@@ -70,12 +125,11 @@ static int __init scull_init(void)
 
 	/* create scull devices */
 	for (s = sculls, i = 0; i < nr_dev; s++, i++) {
-		device_initialize(&s->dev);
-		s->dev.devt = MKDEV(MAJOR(dev_base), MINOR(dev_base) + i);
-		sprintf(buf, SCULL_DEV_PREFIX "%d", i);
-		s->dev.init_name = buf;
-		cdev_init(&s->cdev, &fops);
-		s->cdev.owner = THIS_MODULE;
+		dev_t devt = MKDEV(MAJOR(dev_base), MINOR(dev_base) + i);
+		char name[SCULL_DEV_NAME_LEN];
+
+		sprintf(name, SCULL_DEV_PREFIX "%d", i);
+		scull_initialize(s, devt, name);
 
 		/* add the device into the character device subsystem */
 		err = cdev_device_add(&s->cdev, &s->dev);
