@@ -5,6 +5,7 @@
 #include <linux/printk.h>
 #include <linux/string.h>
 #include <linux/device.h>
+#include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/fs.h>
 #include <linux/kdev_t.h>
@@ -21,7 +22,6 @@ struct scull {
 
 /* Global variables.  Will try to clean those up. */
 const char *scull_dev_name = SCULL_DEV_PREFIX;
-static const int nr_dev = NR_SCULL_DEV;
 static struct scull sculls[NR_SCULL_DEV];
 
 /* File operations. */
@@ -31,6 +31,7 @@ static struct file_operations fops = {
 
 static int __init scull_init(void)
 {
+	const int nr_dev = ARRAY_SIZE(sculls);
 	dev_t dev_base;
 	struct scull *s;
 	char buf[16];
@@ -75,6 +76,7 @@ module_init(scull_init);
 
 static void __exit scull_exit(void)
 {
+	const int nr_dev = ARRAY_SIZE(sculls);
 	dev_t dev_base = sculls[0].dev.devt;
 	struct scull *s;
 	int i;
