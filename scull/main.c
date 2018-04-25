@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
+
 #include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -6,11 +7,13 @@
 #include <linux/string.h>
 #include <linux/device.h>
 #include <linux/kernel.h>
-#include <linux/slab.h>
 #include <linux/err.h>
+#include <linux/errno.h>
 #include <linux/fs.h>
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
+#include <linux/slab.h>
+#include <linux/semaphore.h>
 
 #define NR_SCULL_DEV		4
 #define NR_SCULL_QSET           1000
@@ -19,6 +22,7 @@
 
 /* scull device descriptor. */
 static struct scull {
+	struct semaphore	lock;
 	struct device		dev;
 	struct cdev		cdev;
 	struct scull_qset	*data;
@@ -75,13 +79,25 @@ static int scull_open(struct inode *i, struct file *f)
 
 static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *off)
 {
+	struct scull *s = f->private_data;
+
 	pr_info("%s\n", __FUNCTION__);
+
+	if (down_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	up(&s->lock);
 	return 0;
 }
 
 static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, loff_t *off)
 {
+	struct scull *s = f->private_data;
+
 	pr_info("%s\n", __FUNCTION__);
+
+	if (down_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	up(&s->lock);
 	return len;
 }
 
@@ -108,6 +124,7 @@ static void scull_initialize(struct scull *s, dev_t devt, const char *name)
 	s->cdev.owner = THIS_MODULE;
 	s->qset = scull_qset;
 	s->data = NULL;
+	sema_init(&s->lock, 1);
 }
 
 static int __init scull_init(void)
