@@ -42,6 +42,27 @@ struct scull_qset {
 static int scull_qset = NR_SCULL_QSET;
 static int scull_quantum = SCULL_QUANTUM_SIZE;
 
+/* allocate the quantum set. */
+static struct scull_qset *alloc_qset(struct scull *s)
+{
+	struct scull_qset *qset;
+
+	qset = kzalloc(sizeof(*qset), GFP_KERNEL);
+	if (!qset)
+		goto err;
+
+	/* pointer to each quanta */
+	qset->data = kmalloc(sizeof(void *) * s->qset, GFP_KERNEL);
+	if (!qset->data) {
+		goto err;
+	}
+	return qset;
+err:
+	if (qset)
+		kfree(qset);
+	return ERR_PTR(-ENOMEM);
+}
+
 /* find the quantum set. */
 static struct scull_qset *scull_follow(struct scull *s, const int item)
 {
@@ -49,11 +70,12 @@ static struct scull_qset *scull_follow(struct scull *s, const int item)
 	int i;
 
 	/* follow the data and allocate the appropriate qset */
-	for (dptr = &s->data, i = 0; i < item; dptr = &(*dptr)->next, i++) {
+	for (dptr = &s->data, i = 0; i <= item; dptr = &(*dptr)->next, i++) {
 		if (!*dptr) {
-			*dptr = kzalloc(sizeof(*dptr), GFP_KERNEL);
-			if (!*dptr)
-				return ERR_PTR(-ENOMEM);
+			struct scull_qset *qset = alloc_qset(s);
+			if (IS_ERR(qset))
+				return qset;
+			*dptr = qset;
 		}
 	}
 	return *dptr;
