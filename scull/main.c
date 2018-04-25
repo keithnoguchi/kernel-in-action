@@ -3,6 +3,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/printk.h>
+#include <linux/string.h>
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/fs.h>
@@ -11,13 +12,12 @@
 
 /* scull device driver. */
 struct scull {
-	struct device *dev;
+	struct device dev;
 	struct cdev cdev;
 };
 
 /* Global variables.  Will try to clean those up. */
 static dev_t dev_number_base;
-static struct class *cls = NULL;
 const char *scull_dev_name = "scull";
 static const int nr_dev = 1;
 static struct scull sculls[1];
@@ -30,6 +30,7 @@ static struct file_operations fops = {
 static int __init scull_init(void)
 {
 	struct scull *s;
+	char buf[16];
 	int idx = 0;
 	int err;
 
@@ -42,41 +43,21 @@ static int __init scull_init(void)
 	pr_info("MAJOR=%d, MINOR=%d\n", MAJOR(dev_number_base),
 		MINOR(dev_number_base));
 
-	/* scull class */
-	cls = class_create(THIS_MODULE, scull_dev_name);
-	if (IS_ERR(cls)) {
-		err = PTR_ERR(cls);
-		goto unregister;
-	}
-
 	/* initialize the scull driver. */
 	s = &sculls[idx];
-	s->dev = device_create(cls, NULL, dev_number_base, s,
-			       "%s%d", scull_dev_name, idx);
-	if (IS_ERR(s->dev)) {
-		err = PTR_ERR(s->dev);
-		s->dev = NULL;
-		goto class_destroy;
-	}
+	sprintf(buf, "%s%d", scull_dev_name, idx);
+	device_initialize(&s->dev);
+	s->dev.init_name = buf;
+	s->dev.devt = MKDEV(MAJOR(dev_number_base), idx);
 	cdev_init(&s->cdev, &fops);
 	s->cdev.owner = THIS_MODULE;
 
 	/* register the device into the character device subsystem */
-	err = cdev_device_add(&s->cdev, s->dev);
+	err = cdev_device_add(&s->cdev, &s->dev);
 	if (err)
-		goto device_destroy;
+		goto unregister;
 
 	return 0;
-device_destroy:
-	if (!IS_ERR_OR_NULL(s->dev)) {
-		device_destroy(cls, s->dev->devt);
-		s->dev = NULL;
-	}
-class_destroy:
-	if (!IS_ERR_OR_NULL(cls)) {
-		class_destroy(cls);
-		cls = NULL;
-	}
 unregister:
 	unregister_chrdev_region(dev_number_base, nr_dev);
 	return err;
@@ -90,9 +71,7 @@ static void __exit scull_exit(void)
 
 	pr_info("%s\n", __FUNCTION__);
 	for (s = sculls, i = 0; i < nr_dev; s++, i++)
-		cdev_device_del(&s->cdev, s->dev);
-
-	class_destroy(cls);
+		cdev_device_del(&s->cdev, &s->dev);
 	unregister_chrdev_region(dev_number_base, nr_dev);
 }
 module_exit(scull_exit);
