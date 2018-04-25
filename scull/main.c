@@ -11,14 +11,14 @@
 #include <linux/kdev_t.h>
 #include <linux/cdev.h>
 
-#define NR_SCULL_DEV       4
-#define SCULL_DEV_PREFIX   "scull"
-#define SCULL_DEV_NAME_LEN (strlen(SCULL_DEV_PREFIX) + 2)
+#define NR_SCULL_DEV		4
+#define SCULL_DEV_PREFIX	"scull"
+#define SCULL_DEV_NAME_LEN	(strlen(SCULL_DEV_PREFIX) + 2)
 
 /* scull device descriptor. */
 static struct scull {
-	struct device dev;
-	struct cdev cdev;
+	struct device		dev;
+	struct cdev		cdev;
 } sculls[NR_SCULL_DEV];
 
 /* File operations. */
@@ -35,7 +35,7 @@ static int __init scull_init(void)
 	int i, j;
 	int err;
 
-	/* allocate char device number region */
+	/* allocate the device number region */
 	err = alloc_chrdev_region(&dev_base, 0, nr_dev, SCULL_DEV_PREFIX);
 	if (err)
 		return err;
