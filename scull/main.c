@@ -20,7 +20,6 @@ struct scull {
 };
 
 /* Global variables.  Will try to clean those up. */
-static dev_t dev_number_base;
 const char *scull_dev_name = SCULL_DEV_PREFIX;
 static const int nr_dev = NR_SCULL_DEV;
 static struct scull sculls[NR_SCULL_DEV];
@@ -32,20 +31,21 @@ static struct file_operations fops = {
 
 static int __init scull_init(void)
 {
+	dev_t dev_base;
 	struct scull *s;
 	char buf[16];
 	int i, j;
 	int err;
 
 	/* allocate char device number region */
-	err = alloc_chrdev_region(&dev_number_base, 0, nr_dev, scull_dev_name);
+	err = alloc_chrdev_region(&dev_base, 0, nr_dev, scull_dev_name);
 	if (err)
 		return err;
 
 	/* create scull devices */
 	for (s = sculls, i = 0; i < nr_dev; s++, i++) {
 		device_initialize(&s->dev);
-		s->dev.devt = MKDEV(MAJOR(dev_number_base), i);
+		s->dev.devt = MKDEV(MAJOR(dev_base), MINOR(dev_base) + i);
 		sprintf(buf, "%s%d", scull_dev_name, i);
 		s->dev.init_name = buf;
 		cdev_init(&s->cdev, &fops);
@@ -68,13 +68,14 @@ unregister:
 		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
 			MAJOR(s->dev.devt), MINOR(s->dev.devt));
 	}
-	unregister_chrdev_region(dev_number_base, nr_dev);
+	unregister_chrdev_region(dev_base, nr_dev);
 	return err;
 }
 module_init(scull_init);
 
 static void __exit scull_exit(void)
 {
+	dev_t dev_base = sculls[0].dev.devt;
 	struct scull *s;
 	int i;
 
@@ -83,7 +84,7 @@ static void __exit scull_exit(void)
 		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
 			MAJOR(s->dev.devt), MINOR(s->dev.devt));
 	}
-	unregister_chrdev_region(dev_number_base, nr_dev);
+	unregister_chrdev_region(dev_base, nr_dev);
 }
 module_exit(scull_exit);
 
