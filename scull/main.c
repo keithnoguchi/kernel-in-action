@@ -14,9 +14,11 @@
 #include <linux/cdev.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
+#include <asm/page.h>
 
 #define NR_SCULL_DEV		4
 #define NR_SCULL_QSET           1000
+#define SCULL_QUANTUM_SIZE      PAGE_SIZE
 #define SCULL_DEV_PREFIX	"scull"
 #define SCULL_DEV_NAME_LEN	(strlen(SCULL_DEV_PREFIX) + 2)
 
@@ -27,6 +29,7 @@ static struct scull {
 	struct cdev		cdev;
 	struct scull_qset	*data;
 	int			qset;
+	int			quantum;
 } sculls[NR_SCULL_DEV];
 
 /* quantum set. */
@@ -37,6 +40,24 @@ struct scull_qset {
 
 /* quantum set size. */
 static int scull_qset = NR_SCULL_QSET;
+static int scull_quantum = SCULL_QUANTUM_SIZE;
+
+/* find the quantum set. */
+static struct scull_qset *scull_follow(struct scull *s, const int item)
+{
+	struct scull_qset **dptr;
+	int i;
+
+	/* follow the data and allocate the appropriate qset */
+	for (dptr = &s->data, i = 0; i < item; dptr = &(*dptr)->next, i++) {
+		if (!*dptr) {
+			*dptr = kzalloc(sizeof(*dptr), GFP_KERNEL);
+			if (!*dptr)
+				return ERR_PTR(-ENOMEM);
+		}
+	}
+	return *dptr;
+}
 
 static void scull_trim(struct scull *s)
 {
@@ -77,7 +98,7 @@ static int scull_open(struct inode *i, struct file *f)
 	return 0;
 }
 
-static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *off)
+static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
 {
 	struct scull *s = f->private_data;
 
@@ -89,16 +110,33 @@ static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *
 	return 0;
 }
 
-static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, loff_t *off)
+static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
 {
 	struct scull *s = f->private_data;
+	int quantum = s->quantum, qset = s->qset;
+	int itemsize = quantum * qset;
+	int item, rest, s_pos, q_pos;
+	struct scull_qset *dptr;
+	ssize_t ret = -ENOMEM;
 
 	pr_info("%s\n", __FUNCTION__);
 
 	if (down_interruptible(&s->lock))
 		return -ERESTARTSYS;
+
+	/* get the quantum set, qset index, and offset inside the quantum */
+	item = (long)*pos / itemsize;
+	rest = (long)*pos % itemsize;
+	s_pos = rest / quantum;
+	q_pos = rest % quantum;
+
+	/* find the quantum set */
+	dptr = scull_follow(s, item);
+	if (IS_ERR(dptr))
+		goto out;
+out:
 	up(&s->lock);
-	return len;
+	return ret;
 }
 
 static int scull_release(struct inode *i, struct file *f)
@@ -122,6 +160,7 @@ static void scull_initialize(struct scull *s, dev_t devt, const char *name)
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &scull_fops);
 	s->cdev.owner = THIS_MODULE;
+	s->quantum = scull_quantum;
 	s->qset = scull_qset;
 	s->data = NULL;
 	sema_init(&s->lock, 1);
@@ -181,6 +220,8 @@ static void __exit scull_exit(void)
 		cdev_device_del(&s->cdev, &s->dev);
 		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
 			MAJOR(s->dev.devt), MINOR(s->dev.devt));
+		/* free the quantum sets */
+		scull_trim(s);
 	}
 	unregister_chrdev_region(dev_base, nr_dev);
 }
