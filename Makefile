@@ -1,5 +1,6 @@
 obj-m += ps/
 obj-m += khellod/
+obj-m += scull/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
