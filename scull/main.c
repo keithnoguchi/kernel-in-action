@@ -22,8 +22,36 @@ static struct scull {
 } sculls[NR_SCULL_DEV];
 
 /* File operations. */
+static int scull_open(struct inode *i, struct file *f)
+{
+	pr_info("%s\n", __FUNCTION__);
+	return 0;
+}
+
+static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *off)
+{
+	pr_info("%s\n", __FUNCTION__);
+	return 0;
+}
+
+static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, loff_t *off)
+{
+	pr_info("%s\n", __FUNCTION__);
+	return len;
+}
+
+static int scull_release(struct inode *i, struct file *f)
+{
+	pr_info("%s\n", __FUNCTION__);
+	return 0;
+}
+
 static struct file_operations fops = {
 	.owner = THIS_MODULE,
+	.open = scull_open,
+	.read = scull_read,
+	.write = scull_write,
+	.release = scull_release,
 };
 
 static int __init scull_init(void)
