@@ -165,6 +165,17 @@ static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *
 	dptr = find_qset(s, item);
 	if (!dptr || !dptr->data || !dptr->data[s_pos])
 		goto out;
+
+	/* read only up to the end of this quantum */
+	if (len > quantum - q_pos)
+		len = quantum - q_pos;
+
+	if (copy_to_user(buf, dptr->data[s_pos]+q_pos, len)) {
+		ret = -EFAULT;
+		goto out;
+	}
+	*pos += len;
+	ret = len;
 out:
 	up(&s->lock);
 	return ret;
