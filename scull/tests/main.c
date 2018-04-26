@@ -44,7 +44,13 @@ int main(void)
 		goto out;
 	}
 out:
-	close(fd);
+	/* reset and close the device before exiting */
+	if (ioctl(fd, SCULL_IOCRESET))
+		perror("ioctl(SCULL_IOCRESET)");
+	if (close(fd))
+		perror("close()");
+
+	/* report ioctl() command, in case of error */
 	if (err < 0) {
 		perror(cmd);
 		return EXIT_FAILURE;

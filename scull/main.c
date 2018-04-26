@@ -266,7 +266,8 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case SCULL_IOCRESET:
 		if (down_interruptible(&s->lock))
 			return -ERESTARTSYS;
-		/* reset to the global variable */
+		/* trim the quantum data before resetting the variable. */
+		trim_qset(s);
 		s->quantum = scull_quantum;
 		s->qset = scull_qset;
 		break;
