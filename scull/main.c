@@ -237,8 +237,11 @@ out:
 
 static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
+	pr_info("%s\n", __FUNCTION__);
+
 	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC)
 		return -ENOTTY;
+
 	return 0;
 }
 
