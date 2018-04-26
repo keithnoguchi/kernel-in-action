@@ -239,7 +239,7 @@ static int scull_release(struct inode *i, struct file *f)
 	return 0;
 }
 
-static struct file_operations scull_fops = {
+static const struct file_operations scull_ops = {
 	.owner = THIS_MODULE,
 	.open = scull_open,
 	.read = scull_read,
@@ -252,7 +252,7 @@ static void scull_initialize(struct scull *s, dev_t devt, const char *name)
 	device_initialize(&s->dev);
 	s->dev.devt = devt;
 	s->dev.init_name = name;
-	cdev_init(&s->cdev, &scull_fops);
+	cdev_init(&s->cdev, &scull_ops);
 	s->cdev.owner = THIS_MODULE;
 	s->quantum = scull_quantum;
 	s->qset = scull_qset;
