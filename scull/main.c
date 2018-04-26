@@ -70,13 +70,15 @@ static struct scull_qset *scull_follow(struct scull *s, const int item)
 	int i;
 
 	/* follow the data and allocate the appropriate qset */
-	for (dptr = &s->data, i = 0; i <= item; dptr = &(*dptr)->next, i++) {
+	for (i = 0, dptr = &s->data; i <= item; i++, dptr = &(*dptr)->next) {
 		if (!*dptr) {
 			struct scull_qset *qset = alloc_qset(s);
 			if (IS_ERR(qset))
 				return qset;
 			*dptr = qset;
 		}
+		if (item == i)
+			return *dptr;
 	}
 	return *dptr;
 }
@@ -154,7 +156,7 @@ static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, l
 
 	/* find the quantum set */
 	dptr = scull_follow(s, item);
-	if (IS_ERR(dptr))
+	if (IS_ERR_OR_NULL(dptr))
 		goto out;
 
 	/* find the quantum */
