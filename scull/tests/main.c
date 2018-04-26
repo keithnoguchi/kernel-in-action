@@ -32,6 +32,12 @@ int main(void)
 		cmd = "ioctl(SCULL_IOCRESET)";
 		goto out;
 	}
+	quantum = 10;
+	err = ioctl(fd, SCULL_IOCSQUANTUM, &quantum);
+	if (err == -1) {
+		cmd = "ioctl(SCULL_IOCSQUANTUM)";
+		goto out;
+	}
 	err = ioctl(fd, SCULL_IOCTQUANTUM, quantum);
 	if (err == -1) {
 		cmd = "ioctl(SCULL_IOCTQUANTUM)";
