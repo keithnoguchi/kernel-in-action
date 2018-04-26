@@ -66,7 +66,19 @@ err:
 }
 
 /* find the quantum set. */
-static struct scull_qset *get_qset(struct scull *s, const int item)
+static struct scull_qset *find_qset(struct scull *s, int item)
+{
+	struct scull_qset *dptr;
+	int i;
+
+	for (i = 0, dptr = s->data; i < item; i++, dptr = dptr->next)
+		if (!dptr)
+			break;
+	return dptr;
+}
+
+/* get the quantum set. */
+static struct scull_qset *get_qset(struct scull *s, int item)
 {
 	struct scull_qset **dptr;
 	int i;
@@ -85,6 +97,7 @@ static struct scull_qset *get_qset(struct scull *s, const int item)
 	return *dptr;
 }
 
+/* trim the quantum set. */
 static void trim_qset(struct scull *s)
 {
 	struct scull_qset *next, *dptr;
@@ -128,13 +141,33 @@ static int scull_open(struct inode *i, struct file *f)
 static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
 {
 	struct scull *s = f->private_data;
+	int quantum = s->quantum, qset = s->qset;
+	int itemsize = quantum * qset;
+	int item, rest, s_pos, q_pos;
+	struct scull_qset *dptr;
+	ssize_t ret = 0;
 
 	pr_info("%s\n", __FUNCTION__);
 
 	if (down_interruptible(&s->lock))
 		return -ERESTARTSYS;
+
+	if (*pos >= s->size)
+		goto out;
+	if (*pos + len > s->size)
+		len = s->size - *pos;
+
+	/* find the quantum set */
+	item = (long)*pos / itemsize;
+	rest = (long)*pos % itemsize;
+	s_pos = rest / quantum;
+	q_pos = rest % quantum;
+	dptr = find_qset(s, item);
+	if (!dptr || !dptr->data || !dptr->data[s_pos])
+		goto out;
+out:
 	up(&s->lock);
-	return 0;
+	return ret;
 }
 
 static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
