@@ -263,7 +263,7 @@ out:
 static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	struct scull *s = f->private_data;
-	int quantum, qset;
+	int quantum;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -296,10 +296,8 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		if (!err)
 			err = reset_qset(s, -1, quantum);
 		break;
-	case SCULL_IOCSQSET:
-		err = __get_user(qset, (int __user *)arg);
-		if (!err)
-			err = reset_qset(s, qset, -1);
+	case SCULL_IOCTQUANTUM:
+		err = reset_qset(s, -1, arg);
 		break;
 	default:
 		return -ENOTTY;
