@@ -2,7 +2,7 @@
 
 [![Build Status]](https://travis-ci.org/keinohguchi/kernel-in-action)
 
-Our beloved [LKD] and [LDD] in action on the latest kernel.
+Our beloved [LKD] and [LDD] in action, with the latest kernel.
 
 - [Build](#build)
 - [Load](#load)
