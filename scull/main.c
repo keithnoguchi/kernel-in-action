@@ -235,6 +235,13 @@ out:
 	return ret;
 }
 
+static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+{
+	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC)
+		return -ENOTTY;
+	return 0;
+}
+
 static int scull_release(struct inode *i, struct file *f)
 {
 	pr_info("%s\n", __FUNCTION__);
@@ -246,6 +253,7 @@ static const struct file_operations scull_ops = {
 	.open = scull_open,
 	.read = scull_read,
 	.write = scull_write,
+	.unlocked_ioctl = scull_ioctl,
 	.release = scull_release,
 };
 
