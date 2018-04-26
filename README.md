@@ -4,6 +4,13 @@
 
 Our beloved [LKD] in action on the latest kernel.
 
+- [Build](#build)
+- [Load](#load)
+  - [Process status](#process-status)
+  - [Hello world](#hello-world)
+- [Unload](#unload)
+- [Cleanup](#cleanup)
+
 [Build Status]: https://travis-ci.org/keinohguchi/lkd-in-action.svg
 [LKD]: https://www.amazon.com/Linux-Kernel-Development-Robert-Love/dp/0672329468/ref=as_li_ss_tl?ie=UTF8&tag=roblov-20
 
@@ -105,7 +112,7 @@ air1$ sudo insmod ps/ps.ko
 air1$
 ```
 
-### Hello world!
+### Hello world
 
 [khellod.ko](khellod/main.c) module is the classic hello world kernel thread:
 
