@@ -2,7 +2,7 @@
 
 [![Build Status]](https://travis-ci.org/keinohguchi/lkd-in-action)
 
-Our beloved [LKD] in action on the latest kernel.
+Our beloved [LKD] and [LDD] in action on the latest kernel.
 
 - [Build](#build)
 - [Load](#load)
@@ -11,9 +11,9 @@ Our beloved [LKD] in action on the latest kernel.
   - [Scull](#scull)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
+- [References](#references)
 
 [Build Status]: https://travis-ci.org/keinohguchi/lkd-in-action.svg
-[LKD]: https://www.amazon.com/Linux-Kernel-Development-Robert-Love/dp/0672329468/ref=as_li_ss_tl?ie=UTF8&tag=roblov-20
 
 ## Build
 
@@ -140,7 +140,6 @@ air1$ sudo rmmod khellod
 [scull.ko] is a [LDD]'s simple character device.
 
 [scull.ko]: scull/main.c
-[LDD]: https://lwn.net/Kernel/LDD3/
 
 ```sh
 air1$ pwd
@@ -205,5 +204,18 @@ total 8
 -rw-r--r-- 1 kei wheel   0 Apr 23 15:29 Module.symvers
 -rw-r--r-- 1 kei wheel 395 Apr 23 15:29 main.c
 ```
+
+# References
+
+- [LKD]: Linux Kernel Development, by [Robert Love]
+- [LDD]: Linux Device Driver, by [Jonathan Corbet], [Alessandro Rubini]
+                                 & [Greg Kroah-Hartman]
+
+[LKD]: https://www.amazon.com/Linux-Kernel-Development-Robert-Love/dp/0672329468/ref=as_li_ss_tl?ie=UTF8&tag=roblov-20
+[LDD]: https://lwn.net/Kernel/LDD3/
+[Robert Love]: https://rlove.org/
+[Jonathan Corbet]: http://www.oreilly.com/pub/au/592
+[Alessandro Rubini]: http://www.linux.it/~rubini/
+[Greg Kroah-Hartman]: http://www.kroah.com/
 
 Happy Hackin!
