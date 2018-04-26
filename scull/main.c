@@ -237,10 +237,24 @@ out:
 
 static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
+	int err;
+
 	pr_info("%s\n", __FUNCTION__);
 
+	/* sanity check */
 	if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC)
 		return -ENOTTY;
+	if (_IOC_NR(cmd) >= SCULL_IOC_MAXNR)
+		return -ENOTTY;
+
+	/* check the arg read/write access */
+	err = 0;
+	if (_IOC_DIR(cmd) & _IOC_READ)
+		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+	if (err)
+		return -EFAULT;
 
 	return 0;
 }

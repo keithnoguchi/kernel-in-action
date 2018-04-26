@@ -32,10 +32,14 @@ int main(void)
 		cmd = "ioctl(SCULL_IOCTQUANTUM)";
 		goto out;
 	}
-
+	quantum = ioctl(fd, SCULL_IOCHQSET, quantum);
+	if (quantum == -1) {
+		err = quantum;
+		cmd = "ioctl(SCULL_IOCHQSET)";
+		goto out;
+	}
 out:
-	if ((err = close(fd)))
-		cmd = "close";
+	close(fd);
 	if (err < 0) {
 		perror(cmd);
 		return EXIT_FAILURE;
