@@ -123,6 +123,31 @@ static void trim_qset(struct scull *s)
 	s->size = 0;
 }
 
+/* Reset qset. */
+static int reset_qset(struct scull *s, int qset, int quantum)
+{
+	int ret = 0;
+
+	if (down_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	/* pick the current value in case the new value is less than zero */
+	if (qset < 0)
+		qset = s->qset;
+	/* pick the current value in case the new value is less than zero */
+	if (quantum < 0)
+		quantum = s->quantum;
+	/* No need to update the value */
+	if (s->qset == qset && s->quantum == quantum)
+		goto out;
+	/* trim the quantum set before chaning the value */
+	trim_qset(s);
+	s->quantum = quantum;
+	s->qset = qset;
+out:
+	up(&s->lock);
+	return ret;
+}
+
 /* File operations. */
 static int scull_open(struct inode *i, struct file *f)
 {
@@ -238,8 +263,7 @@ out:
 static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	struct scull *s = f->private_data;
-	int quantum;
-	int ret = 0;
+	int quantum, qset;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -265,29 +289,22 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case SCULL_IOCRESET:
-		if (down_interruptible(&s->lock))
-			return -ERESTARTSYS;
-		/* trim the quantum data before resetting the variable. */
-		trim_qset(s);
-		s->quantum = scull_quantum;
-		s->qset = scull_qset;
+		err = reset_qset(s, scull_qset, scull_quantum);
 		break;
 	case SCULL_IOCSQUANTUM:
-		ret = __get_user(quantum, (int __user *)arg);
-		if (ret)
-			break;
-		if (down_interruptible(&s->lock))
-			return -ERESTARTSYS;
-		/* trim the quantum before chaning the quantum variable. */
-		trim_qset(s);
-		s->quantum = quantum;
+		err = __get_user(quantum, (int __user *)arg);
+		if (!err)
+			err = reset_qset(s, -1, quantum);
+		break;
+	case SCULL_IOCSQSET:
+		err = __get_user(qset, (int __user *)arg);
+		if (!err)
+			err = reset_qset(s, qset, -1);
 		break;
 	default:
 		return -ENOTTY;
 	}
-	up(&s->lock);
-
-	return ret;
+	return err;
 }
 
 static int scull_release(struct inode *i, struct file *f)
