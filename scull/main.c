@@ -237,6 +237,8 @@ out:
 
 static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
+	struct scull *s = f->private_data;
+	int ret = 0;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -256,7 +258,24 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	if (err)
 		return -EFAULT;
 
-	return 0;
+	/* simple capability check */
+	if (!capable(CAP_SYS_ADMIN))
+		return -EPERM;
+
+	switch (cmd) {
+	case SCULL_IOCRESET:
+		if (down_interruptible(&s->lock))
+			return -ERESTARTSYS;
+		/* reset to the global variable */
+		s->quantum = scull_quantum;
+		s->qset = scull_qset;
+		break;
+	default:
+		return -ENOTTY;
+	}
+	up(&s->lock);
+
+	return ret;
 }
 
 static int scull_release(struct inode *i, struct file *f)

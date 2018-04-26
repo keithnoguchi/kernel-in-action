@@ -27,6 +27,11 @@ int main(void)
 	}
 
 	/* scull ioctls */
+	err = ioctl(fd, SCULL_IOCRESET);
+	if (err == -1) {
+		cmd = "ioctl(SCULL_IOCRESET)";
+		goto out;
+	}
 	err = ioctl(fd, SCULL_IOCTQUANTUM, quantum);
 	if (err == -1) {
 		cmd = "ioctl(SCULL_IOCTQUANTUM)";
