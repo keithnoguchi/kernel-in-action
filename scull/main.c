@@ -14,6 +14,7 @@
 #include <linux/cdev.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
+#include <linux/uaccess.h>
 #include <asm/page.h>
 
 #define NR_SCULL_DEV		4
@@ -28,6 +29,7 @@ static struct scull {
 	struct device		dev;
 	struct cdev		cdev;
 	struct scull_qset	*data;
+	int			size;
 	int			qset;
 	int			quantum;
 } sculls[NR_SCULL_DEV];
@@ -103,6 +105,7 @@ static void scull_trim(struct scull *s)
 	}
 	s->qset = scull_qset;
 	s->data = NULL;
+	s->size = 0;
 }
 
 /* File operations. */
@@ -165,6 +168,22 @@ static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, l
 		if (!dptr->data[s_pos])
 			goto out;
 	}
+
+	/* write only up to the end of this quantum */
+	if (len > quantum - q_pos)
+		len = quantum - q_pos;
+
+	/* copy data to the device */
+	if (copy_from_user(dptr->data[s_pos]+q_pos, buf, len)) {
+		ret = -EFAULT;
+		goto out;
+	}
+	*pos += len;
+	ret = len;
+
+	/* update the current size */
+	if (s->size < *pos)
+		s->size = *pos;
 out:
 	up(&s->lock);
 	return ret;
@@ -194,6 +213,7 @@ static void scull_initialize(struct scull *s, dev_t devt, const char *name)
 	s->quantum = scull_quantum;
 	s->qset = scull_qset;
 	s->data = NULL;
+	s->size = 0;
 	sema_init(&s->lock, 1);
 }
 
