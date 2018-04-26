@@ -17,6 +17,8 @@
 #include <linux/uaccess.h>
 #include <asm/page.h>
 
+#include "scull.h"
+
 #define NR_SCULL_DEV		4
 #define NR_SCULL_QSET           1000
 #define SCULL_QUANTUM_SIZE      PAGE_SIZE
