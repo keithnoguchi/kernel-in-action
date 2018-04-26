@@ -156,6 +156,13 @@ static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, l
 	dptr = scull_follow(s, item);
 	if (IS_ERR(dptr))
 		goto out;
+
+	/* find the quantum */
+	if (!dptr->data[s_pos]) {
+		dptr->data[s_pos] = kzalloc(s->quantum, GFP_KERNEL);
+		if (!dptr->data[s_pos])
+			goto out;
+	}
 out:
 	up(&s->lock);
 	return ret;
