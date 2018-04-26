@@ -1,6 +1,6 @@
 # Linux Kernel Development in action
 
-[![Build Status]](https://travis-ci.org/keinohguchi/lkd-in-action)
+[![Build Status]](https://travis-ci.org/keinohguchi/kernel-in-action)
 
 Our beloved [LKD] and [LDD] in action on the latest kernel.
 
@@ -13,7 +13,7 @@ Our beloved [LKD] and [LDD] in action on the latest kernel.
 - [Cleanup](#cleanup)
 - [References](#references)
 
-[Build Status]: https://travis-ci.org/keinohguchi/lkd-in-action.svg
+[Build Status]: https://travis-ci.org/keinohguchi/kernel-in-action.svg
 
 ## Build
 
@@ -21,14 +21,14 @@ Top level `make` will do the work:
 
 ```sh
 air1$ make
-make -C /lib/modules/4.16.2.1/build M=/home/kei/git/lkd-in-action modules
+make -C /lib/modules/4.16.2.1/build M=/home/kei/git/kernel-in-action modules
 make[1]: Entering directory '/home/kei/src/linux-4.16.2'
-  CC [M]  /home/kei/git/lkd-in-action/ps/main.o
-  LD [M]  /home/kei/git/lkd-in-action/ps/ps.o
+  CC [M]  /home/kei/git/kernel-in-action/ps/main.o
+  LD [M]  /home/kei/git/kernel-in-action/ps/ps.o
   Building modules, stage 2.
   MODPOST 1 modules
-  CC      /home/kei/git/lkd-in-action/ps/ps.mod.o
-  LD [M]  /home/kei/git/lkd-in-action/ps/ps.ko
+  CC      /home/kei/git/kernel-in-action/ps/ps.mod.o
+  LD [M]  /home/kei/git/kernel-in-action/ps/ps.ko
 make[1]: Leaving directory '/home/kei/src/linux-4.16.2'
 air1$
 ```
@@ -143,7 +143,7 @@ air1$ sudo rmmod khellod
 
 ```sh
 air1$ pwd
-/home/kei/src/linux-4.16.4/lkd-in-action
+/home/kei/src/linux-4.16.4/kernel-in-action
 air1$ sudo insmod ./scull/scull.ko
 [ 2470.008335] scull0[246:0]: added
 [ 2470.008894] scull1[246:1]: added
@@ -193,10 +193,10 @@ Just `make clean`, of course:
 
 ```sh
 air1$ make clean
-make -C /lib/modules/4.16.2.1/build M=/home/kei/git/lkd-in-action clean
+make -C /lib/modules/4.16.2.1/build M=/home/kei/git/kernel-in-action clean
 make[1]: Entering directory '/home/kei/src/linux-4.16.2'
-  CLEAN   /home/kei/git/lkd-in-action/.tmp_versions
-  CLEAN   /home/kei/git/lkd-in-action/Module.symvers
+  CLEAN   /home/kei/git/kernel-in-action/.tmp_versions
+  CLEAN   /home/kei/git/kernel-in-action/Module.symvers
 make[1]: Leaving directory '/home/kei/src/linux-4.16.2'
 air1$ ls -l ./ps/
 total 8
