@@ -8,6 +8,7 @@ Our beloved [LKD] in action on the latest kernel.
 - [Load](#load)
   - [Process status](#process-status)
   - [Hello world](#hello-world)
+  - [Scull](#scull)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
 
@@ -36,7 +37,9 @@ air1$
 
 ### Process status
 
-[ps.ko](ps/main.c) module is the classic ps command inside kernel:
+[ps.ko] module is a classic ps command inside kernel:
+
+[ps.ko]: ps/main.c
 
 ```sh
 air1$ sudo insmod ps/ps.ko
@@ -114,7 +117,9 @@ air1$
 
 ### Hello world
 
-[khellod.ko](khellod/main.c) module is the classic hello world kernel thread:
+[khellod.ko] module is a classic hello world kernel thread:
+
+[khellod.ko]: khellod/main.c
 
 ```sh
 air1$ sudo insmod khellod/khellod.ko
@@ -128,6 +133,51 @@ air1$ sudo insmod khellod/khellod.ko
 [ 9157.545049] Hello world!
 air1$ sudo rmmod khellod
 [ 9158.342860] khellod_exit
+```
+
+### Scull
+
+[scull.ko] is a [LDD]'s simple character device.
+
+[scull.ko]: scull/main.c
+[LDD]: https://lwn.net/Kernel/LDD3/
+
+```sh
+air1$ pwd
+/home/kei/src/linux-4.16.4/lkd-in-action
+air1$ sudo insmod ./scull/scull.ko
+[ 2470.008335] scull0[246:0]: added
+[ 2470.008894] scull1[246:1]: added
+[ 2470.009638] scull2[246:2]: added
+[ 2470.010373] scull3[246:3]: added
+air1$ ls -l /dev/scull*
+crw------- 1 root root 246, 0 Apr 25 21:19 /dev/scull0
+crw------- 1 root root 246, 1 Apr 25 21:19 /dev/scull1
+crw------- 1 root root 246, 2 Apr 25 21:19 /dev/scull2
+crw------- 1 root root 246, 3 Apr 25 21:19 /dev/scull3
+```
+```sh
+air1$ sudo bash -c 'ls -l > /dev/scull3'
+[ 2488.790331] scull_open
+[ 2488.790822] trim_qset
+[ 2488.791913] scull_write
+[ 2488.792400] scull_release
+```
+```sh
+air1$ sudo cat /dev/scull3
+[ 2497.280772] scull_open
+[ 2497.281594] scull_read
+total 28
+-rw-r--r-- 1 kei wheel  220 Apr 25 20:40 Makefile
+-rw-r--r-- 1 kei wheel    0 Apr 25 20:44 Module.symvers
+-rw-r--r-- 1 kei wheel 4327 Apr 25 21:18 README.md
+drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 khellod
+-rw-r--r-- 1 kei wheel  187 Apr 25 21:06 modules.order
+drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 ps
+drwxr-xr-x 2 kei wheel 4096 Apr 25 21:06 scull
+[ 2497.287428] scull_read
+[ 2497.288004] scull_release
+air1$
 ```
 
 ## Unload
