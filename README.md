@@ -137,7 +137,7 @@ air1$ sudo rmmod khellod
 
 ### Scull
 
-[scull.ko] is a [LDD]'s simple character device.
+[scull.ko] is a [LDD]'s simple character device, explained in [LDD chapter 3].
 
 [scull.ko]: scull/main.c
 
@@ -213,6 +213,7 @@ total 8
 
 [LKD]: https://www.amazon.com/Linux-Kernel-Development-Robert-Love/dp/0672329468/ref=as_li_ss_tl?ie=UTF8&tag=roblov-20
 [LDD]: https://lwn.net/Kernel/LDD3/
+[LDD chapter 3]: https://lwn.net/images/pdf/LDD3/ch03.pdf
 [Robert Love]: https://rlove.org/
 [Jonathan Corbet]: http://www.oreilly.com/pub/au/592
 [Alessandro Rubini]: http://www.linux.it/~rubini/
