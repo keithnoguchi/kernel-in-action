@@ -51,8 +51,8 @@ static struct scull_qset *alloc_qset(struct scull *s)
 	if (!qset)
 		goto err;
 
-	/* pointer to each quanta */
-	qset->data = kmalloc(sizeof(void *) * s->qset, GFP_KERNEL);
+	/* pointer to each quantum */
+	qset->data = kzalloc(sizeof(void *) * s->qset, GFP_KERNEL);
 	if (!qset->data) {
 		goto err;
 	}
