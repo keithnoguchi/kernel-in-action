@@ -66,7 +66,7 @@ err:
 }
 
 /* find the quantum set. */
-static struct scull_qset *scull_follow(struct scull *s, const int item)
+static struct scull_qset *get_qset(struct scull *s, const int item)
 {
 	struct scull_qset **dptr;
 	int i;
@@ -85,7 +85,7 @@ static struct scull_qset *scull_follow(struct scull *s, const int item)
 	return *dptr;
 }
 
-static void scull_trim(struct scull *s)
+static void trim_qset(struct scull *s)
 {
 	struct scull_qset *next, *dptr;
 	int qset = s->qset;
@@ -120,7 +120,7 @@ static int scull_open(struct inode *i, struct file *f)
 
 	/* trim the device when it was opened write-only */
 	if ((f->f_flags & O_ACCMODE) == O_WRONLY)
-		scull_trim(s);
+		trim_qset(s);
 
 	return 0;
 }
@@ -157,8 +157,8 @@ static ssize_t scull_write(struct file *f, const char __user *buf, size_t len, l
 	s_pos = rest / quantum;
 	q_pos = rest % quantum;
 
-	/* find the quantum set */
-	dptr = scull_follow(s, item);
+	/* get the quantum set */
+	dptr = get_qset(s, item);
 	if (IS_ERR_OR_NULL(dptr))
 		goto out;
 
@@ -272,7 +272,7 @@ static void __exit scull_exit(void)
 		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
 			MAJOR(s->dev.devt), MINOR(s->dev.devt));
 		/* free the quantum sets */
-		scull_trim(s);
+		trim_qset(s);
 	}
 	unregister_chrdev_region(dev_base, nr_dev);
 }
