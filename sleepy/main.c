@@ -7,6 +7,8 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
+#include <linux/sched.h>
+#include <linux/mutex.h>
 
 #define NR_SLEEPY_DEV		4
 #define SLEEPY_DEV_PREFIX	"sleep"
@@ -14,20 +16,18 @@
 
 /* sleepy device descriptor */
 static struct sleepy {
+	struct mutex	lock;
 	struct device	dev;
 	struct cdev	cdev;
+	int		ready;
 } sleepys[NR_SLEEPY_DEV];
 
 /* file operation methods */
 static int sleepy_open(struct inode *i, struct file *f)
 {
 	struct sleepy *s = container_of(i->i_cdev, struct sleepy, cdev);
-
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
-
-	/* for other methods */
-	f->private_data = s;
-
+	f->private_data = s; /* for other methods */
 	return 0;
 }
 
@@ -35,6 +35,8 @@ static ssize_t sleepy_read(struct file *f, char __user *buf, size_t len, loff_t 
 {
 	struct sleepy *s = f->private_data;
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	mutex_lock_interruptible(&s->lock);
+	mutex_unlock(&s->lock);
 	return 0;
 }
 
@@ -42,6 +44,8 @@ static ssize_t sleepy_write(struct file *f, const char __user *buf, size_t len, 
 {
 	struct sleepy *s = f->private_data;
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	mutex_lock_interruptible(&s->lock);
+	mutex_unlock(&s->lock);
 	return 0;
 }
 
@@ -71,6 +75,8 @@ static void __init sleepy_initialize(struct sleepy *s, const dev_t dev_base, int
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &sleepy_ops);
 	s->cdev.owner = THIS_MODULE;
+	s->ready = 0;
+	mutex_init(&s->lock);
 }
 
 static int __init sleepy_init(void)
