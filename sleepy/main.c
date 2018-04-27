@@ -22,13 +22,13 @@ static struct sleepy {
 static int sleepy_open(struct inode *i, struct file *f)
 {
 	pr_info("%s\n", __FUNCTION__);
-	return -ENOTTY;
+	return -EINVAL;
 }
 
 static int sleepy_release(struct inode *i, struct file *f)
 {
 	pr_info("%s\n", __FUNCTION__);
-	return -ENOTTY;
+	return -EINVAL;
 }
 
 static const struct file_operations sleepy_ops = {
