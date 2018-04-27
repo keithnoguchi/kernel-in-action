@@ -9,7 +9,7 @@
 #include <linux/fs.h>
 
 #define NR_SLEEPY_DEV		4
-#define SLEEPY_DEV_PREFIX	"sleepy"
+#define SLEEPY_DEV_PREFIX	"sleep"
 #define SLEEPY_DEV_NAME_LEN	(strlen(SLEEPY_DEV_PREFIX) + 2)
 
 /* sleepy device descriptor */
@@ -21,18 +21,43 @@ static struct sleepy {
 /* file operation methods */
 static int sleepy_open(struct inode *i, struct file *f)
 {
-	pr_info("%s\n", __FUNCTION__);
-	return -EINVAL;
+	struct sleepy *s = container_of(i->i_cdev, struct sleepy, cdev);
+
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+
+	/* for other methods */
+	f->private_data = s;
+
+	return 0;
+}
+
+static ssize_t sleepy_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
+{
+	struct sleepy *s = f->private_data;
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	return 0;
+}
+
+static ssize_t sleepy_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
+{
+	struct sleepy *s = f->private_data;
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	return 0;
 }
 
 static int sleepy_release(struct inode *i, struct file *f)
 {
-	pr_info("%s\n", __FUNCTION__);
-	return -EINVAL;
+	struct sleepy *s = f->private_data;
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	/* just to be inline with sleepy_open() */
+	f->private_data = NULL;
+	return 0;
 }
 
 static const struct file_operations sleepy_ops = {
 	.open = sleepy_open,
+	.read = sleepy_read,
+	.write = sleepy_write,
 	.release = sleepy_release,
 };
 
