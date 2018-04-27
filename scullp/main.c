@@ -7,28 +7,27 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
+#include <linux/wait.h>
 #include <linux/mutex.h>
+#include <linux/slab.h>
+#include <asm/page.h>
 
-#define NR_SCULL_PIPE_DEV	4
-#define SCULL_PIPE_DEV_PREFIX	"scullp"
-#define SCULL_PIPE_DEV_NAME_LEN	(strlen(SCULL_PIPE_DEV_PREFIX) + 2)
+#define NR_SCULL_PIPE_DEV		4
+#define SCULL_PIPE_BUFFER_SIZ		PAGE_SIZE
+#define SCULL_PIPE_DEV_PREFIX		"scullp"
+#define SCULL_PIPE_DEV_NAME_LEN		(strlen(SCULL_PIPE_DEV_PREFIX) + 2)
 
 /* scull pipe device descriptor */
 struct scullp {
-	struct mutex		lock;
-	struct device		dev;
-	struct cdev		cdev;
+	struct mutex			lock;
+	wait_queue_head_t		ewq;
+	wait_queue_head_t		inwq;
+	char				*buffer;
+	int				size;
+	int				rp, wp;
+	struct device			dev;
+	struct cdev			cdev;
 } scullps[NR_SCULL_PIPE_DEV];
-
-static int scullp_open(struct inode *i, struct file *f)
-{
-	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
-
-	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
-	f->private_data = s;
-
-	return 0;
-}
 
 static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
 {
@@ -43,6 +42,7 @@ static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t 
 static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
 {
 	struct scullp *s = f->private_data;
+	DEFINE_WAIT(wait);
 
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
@@ -50,20 +50,39 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 	return -ENOTTY;
 }
 
+static int scullp_open(struct inode *i, struct file *f)
+{
+	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
+
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	s->size = SCULL_PIPE_BUFFER_SIZ;
+	s->buffer = kzalloc(s->size, GFP_KERNEL);
+	if (!s->buffer)
+		return -ENOMEM;
+	s->rp = s->wp = 0;
+	f->private_data = s;
+
+	return 0;
+}
+
 static int scullp_release(struct inode *i, struct file *f)
 {
 	struct scullp *s = f->private_data;
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	if (s->buffer)
+		kfree(s->buffer);
+	s->buffer = NULL;
+	s->size = s->rp = s->wp = 0;
 	f->private_data = NULL;
 
 	return 0;
 }
 
 static const struct file_operations scullp_ops = {
-	.open = scullp_open,
 	.read = scullp_read,
 	.write = scullp_write,
+	.open = scullp_open,
 	.release = scullp_release,
 };
 
@@ -78,6 +97,8 @@ static void __init scullp_initialize(struct scullp *s, const dev_t dev_base, int
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &scullp_ops);
 	s->cdev.owner = THIS_MODULE;
+	init_waitqueue_head(&s->ewq);
+	init_waitqueue_head(&s->inwq);
 	mutex_init(&s->lock);
 }
 
