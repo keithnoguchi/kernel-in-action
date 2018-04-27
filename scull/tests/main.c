@@ -10,15 +10,14 @@
 
 #include "../scull.h"
 
-int main(void)
+static int test_scull_ioctl_quantum(const char *name, const char *scull)
 {
-	const char *scull = "/dev/scull0";
 	const char *cmd;
 	int set_quantum, get_quantum;
 	int err;
 	int fd;
 
-	printf("test scull.ko through ioctl()!\n");
+	printf("%s\n", name);
 
 	/* open scull device. */
 	fd = open(scull, O_RDONLY);
@@ -95,4 +94,9 @@ out:
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
+}
+
+int main(void)
+{
+	test_scull_ioctl_quantum("1. ioctl(SCULL_IOC?QUANTUM)", "/dev/scull0");
 }
