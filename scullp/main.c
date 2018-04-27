@@ -13,14 +13,14 @@
 #define SCULL_PIPE_DEV_NAME_LEN	(strlen(SCULL_PIPE_DEV_PREFIX) + 2)
 
 /* scull pipe device descriptor */
-struct scull_pipe {
+struct scullp {
 	struct device		dev;
 	struct cdev		cdev;
-} scull_pipes[NR_SCULL_PIPE_DEV];
+} scullps[NR_SCULL_PIPE_DEV];
 
 static int scullp_open(struct inode *i, struct file *f)
 {
-	struct scull_pipe *s = container_of(i->i_cdev, struct scull_pipe, cdev);
+	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
 	f->private_data = s;
@@ -30,7 +30,7 @@ static int scullp_open(struct inode *i, struct file *f)
 
 static int scullp_release(struct inode *i, struct file *f)
 {
-	struct scull_pipe *s = f->private_data;
+	struct scullp *s = f->private_data;
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
 	f->private_data = NULL;
@@ -38,12 +38,12 @@ static int scullp_release(struct inode *i, struct file *f)
 	return 0;
 }
 
-static const struct file_operations scull_pipe_ops = {
+static const struct file_operations scullp_ops = {
 	.open = scullp_open,
 	.release = scullp_release,
 };
 
-static void __init scullp_initialize(struct scull_pipe *s, const dev_t dev_base, int i)
+static void __init scullp_initialize(struct scullp *s, const dev_t dev_base, int i)
 {
 	char name[SCULL_PIPE_DEV_NAME_LEN];
 
@@ -52,14 +52,14 @@ static void __init scullp_initialize(struct scull_pipe *s, const dev_t dev_base,
 	s->dev.devt = MKDEV(MAJOR(dev_base), MINOR(dev_base)+i);
 	sprintf(name, SCULL_PIPE_DEV_PREFIX "%d", i);
 	s->dev.init_name = name;
-	cdev_init(&s->cdev, &scull_pipe_ops);
+	cdev_init(&s->cdev, &scullp_ops);
 	s->cdev.owner = THIS_MODULE;
 }
 
 static int __init scullp_init(void)
 {
-	int nr_dev = ARRAY_SIZE(scull_pipes);
-	struct scull_pipe *s = scull_pipes;
+	int nr_dev = ARRAY_SIZE(scullps);
+	struct scullp *s = scullps;
 	dev_t dev_base;
 	int i, j;
 	int err;
@@ -91,8 +91,8 @@ module_init(scullp_init);
 
 static void __exit scullp_exit(void)
 {
-	int nr_dev = ARRAY_SIZE(scull_pipes);
-	struct scull_pipe *s = scull_pipes;
+	int nr_dev = ARRAY_SIZE(scullps);
+	struct scullp *s = scullps;
 	dev_t dev_base = s->dev.devt;
 	int i;
 

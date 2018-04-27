@@ -2,7 +2,7 @@ obj-m += ps/
 obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/
-obj-m += scullpipe/
+obj-m += scullp/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 

@@ -1,5 +1,5 @@
-obj-m += scullpipe.o
-scullpipe-objs = main.o
+obj-m += scullp.o
+scullp-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
