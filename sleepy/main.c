@@ -7,8 +7,9 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
-#include <linux/sched.h>
 #include <linux/mutex.h>
+#include <linux/sched.h>
+#include <linux/wait.h>
 
 #define NR_SLEEPY_DEV		4
 #define SLEEPY_DEV_PREFIX	"sleep"
@@ -16,11 +17,33 @@
 
 /* sleepy device descriptor */
 static struct sleepy {
-	struct mutex	lock;
-	struct device	dev;
-	struct cdev	cdev;
-	int		ready;
+	struct device		dev;
+	struct cdev		cdev;
+	wait_queue_head_t	wq;
+	struct mutex		lock;
+	int			ready;
 } sleepys[NR_SLEEPY_DEV];
+
+static inline void ready(struct sleepy *s)
+{
+	mutex_lock_interruptible(&s->lock);
+	s->ready = 1;
+	mutex_unlock(&s->lock);
+}
+
+static int is_ready(struct sleepy *s)
+{
+	int ready;
+	int err;
+
+	err = mutex_lock_interruptible(&s->lock);
+	if (err)
+		return 0;
+	ready = s->ready;
+	s->ready = 0; /* only one waiter to wake up */
+	mutex_unlock(&s->lock);
+	return ready;
+}
 
 /* file operation methods */
 static int sleepy_open(struct inode *i, struct file *f)
@@ -34,19 +57,24 @@ static int sleepy_open(struct inode *i, struct file *f)
 static ssize_t sleepy_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
 {
 	struct sleepy *s = f->private_data;
+
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
-	mutex_lock_interruptible(&s->lock);
-	mutex_unlock(&s->lock);
-	return 0;
+	pr_info("process %i (%s) going to sleep\n",
+		current->pid, current->comm);
+	wait_event_interruptible(s->wq, is_ready(s));
+	pr_info("awoken %i (%s)\n", current->pid, current->comm);
+	return 0; /* EOF */
 }
 
 static ssize_t sleepy_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
 {
 	struct sleepy *s = f->private_data;
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
-	mutex_lock_interruptible(&s->lock);
-	mutex_unlock(&s->lock);
-	return 0;
+	pr_info("process %i (%s) awakening the reader...\n",
+		current->pid, current->comm);
+	ready(s);
+	wake_up_interruptible(&s->wq);
+	return len; /* avoid retry */
 }
 
 static int sleepy_release(struct inode *i, struct file *f)
@@ -77,6 +105,7 @@ static void __init sleepy_initialize(struct sleepy *s, const dev_t dev_base, int
 	s->cdev.owner = THIS_MODULE;
 	s->ready = 0;
 	mutex_init(&s->lock);
+	init_waitqueue_head(&s->wq);
 }
 
 static int __init sleepy_init(void)
