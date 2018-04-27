@@ -1,8 +1,5 @@
-obj-m += ps/
-obj-m += hello/
-obj-m += scull/
-obj-m += sleepy/
-obj-m += scullpipe/
+obj-m += scullpipe.o
+scullpipe-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
