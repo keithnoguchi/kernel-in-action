@@ -321,6 +321,12 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		err = __put_user(s->quantum, (int __user *)arg);
 		up(&s->lock);
 		break;
+	case SCULL_IOCGQSET:
+		if (down_interruptible(&s->lock))
+			return -ERESTARTSYS;
+		err = __put_user(s->qset, (int __user *)arg);
+		up(&s->lock);
+		break;
 	case SCULL_IOCQQUANTUM:
 		if (down_interruptible(&s->lock))
 			return -ERESTARTSYS;
