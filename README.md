@@ -118,13 +118,13 @@ air1$
 
 ### Hello world
 
-[khellod.ko] module is a classic hello world kernel thread:
+[hello.ko] module is a classic hello world kernel thread module:
 
-[khellod.ko]: khellod/main.c
+[hello.ko]: hello/main.c
 
 ```sh
-air1$ sudo insmod khellod/khellod.ko
-[ 9151.462539] khellod_init
+air1$ sudo insmod hello/hello.ko
+[ 9151.462539] hello_init
 [ 9151.464501] Hello world!
 [ 9152.478305] Hello world!
 [ 9153.491636] Hello world!
@@ -132,8 +132,8 @@ air1$ sudo insmod khellod/khellod.ko
 [ 9155.518379] Hello world!
 [ 9156.531786] Hello world!
 [ 9157.545049] Hello world!
-air1$ sudo rmmod khellod
-[ 9158.342860] khellod_exit
+air1$ sudo rmmod hello
+[ 9158.342860] hello_exit
 ```
 
 ### Scull
@@ -171,7 +171,7 @@ total 28
 -rw-r--r-- 1 kei wheel  220 Apr 25 20:40 Makefile
 -rw-r--r-- 1 kei wheel    0 Apr 25 20:44 Module.symvers
 -rw-r--r-- 1 kei wheel 4327 Apr 25 21:18 README.md
-drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 khellod
+drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 hello
 -rw-r--r-- 1 kei wheel  187 Apr 25 21:06 modules.order
 drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 ps
 drwxr-xr-x 2 kei wheel 4096 Apr 25 21:06 scull

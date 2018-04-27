@@ -1,5 +1,5 @@
 obj-m += ps/
-obj-m += khellod/
+obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/
 

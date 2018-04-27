@@ -1,12 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 
-#include <linux/types.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/printk.h>
+#include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/device.h>
-#include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/errno.h>
 #include <linux/fs.h>
