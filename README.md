@@ -230,8 +230,23 @@ the sleepy_write() method call.
 ## Unload
 
 ```sh
-air1$ sudo rmmod ps
-[ 1134.851008] ps_exit()
+air1$ for i in ps hello scull sleepy; do sudo rmmod $i; done
+[ 3527.769278] ps_exit()
+[ 3527.791679] hello_exit
+[ 3527.810600] scull_exit
+[ 3527.811089] scull0[246:0]: deleted
+[ 3527.811661] trim_qset
+[ 3527.812067] scull1[246:1]: deleted
+[ 3527.813049] trim_qset
+[ 3527.813608] scull2[246:2]: deleted
+[ 3527.814160] trim_qset
+[ 3527.816198] scull3[246:3]: deleted
+[ 3527.816850] trim_qset
+[ 3527.837871] sleepy_exit
+[ 3527.838375] sleep0[245:0]: deleted
+[ 3527.842714] sleep1[245:1]: deleted
+[ 3527.843367] sleep2[245:2]: deleted
+[ 3527.843988] sleep3[245:3]: deleted
 air1$
 ```
 
