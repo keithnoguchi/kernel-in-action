@@ -126,8 +126,6 @@ static void trim_qset(struct scull *s)
 /* Reset qset. */
 static int reset_qset(struct scull *s, int *qset, int *quantum)
 {
-	int ret = 0;
-
 	if (down_interruptible(&s->lock))
 		return -ERESTARTSYS;
 	/* pick the current value in case the new value is less than zero */
@@ -145,7 +143,7 @@ static int reset_qset(struct scull *s, int *qset, int *quantum)
 	s->qset = *qset;
 out:
 	up(&s->lock);
-	return ret;
+	return 0;
 }
 
 /* File operations. */
