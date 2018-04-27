@@ -156,8 +156,8 @@ static int scull_open(struct inode *i, struct file *f)
 	/* for read/write */
 	f->private_data = s;
 
-	/* trim the device when it was opened write-only */
-	if ((f->f_flags & O_ACCMODE) == O_WRONLY)
+	/* trim the device when it was opened as write-only and non append mode. */
+	if ((f->f_flags & O_ACCMODE) == O_WRONLY && !(f->f_flags & O_APPEND))
 		trim_qset(s);
 
 	return 0;
