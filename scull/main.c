@@ -325,6 +325,13 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			quantum = -1;
 		err = __put_user(quantum, (int __user *)arg);
 		break;
+	case SCULL_IOCHQUANTUM:
+		qset = -1; /* use the current qset */
+		quantum = arg;
+		err = reset_qset(s, &qset, &quantum);
+		if (!err)
+			err = quantum;
+		break;
 	default:
 		return -ENOTTY;
 	}
