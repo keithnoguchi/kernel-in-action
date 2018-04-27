@@ -18,7 +18,29 @@ struct scull_pipe {
 	struct cdev		cdev;
 } scull_pipes[NR_SCULL_PIPE_DEV];
 
+static int scullp_open(struct inode *i, struct file *f)
+{
+	struct scull_pipe *s = container_of(i->i_cdev, struct scull_pipe, cdev);
+
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	f->private_data = s;
+
+	return 0;
+}
+
+static int scullp_release(struct inode *i, struct file *f)
+{
+	struct scull_pipe *s = f->private_data;
+
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	f->private_data = NULL;
+
+	return 0;
+}
+
 static const struct file_operations scull_pipe_ops = {
+	.open = scullp_open,
+	.release = scullp_release,
 };
 
 static void __init scullp_initialize(struct scull_pipe *s, const dev_t dev_base, int i)
