@@ -1,7 +1,5 @@
-obj-m += ps/
-obj-m += khellod/
-obj-m += scull/
-obj-m += sleepy/
+obj-m += sleepy.o
+sleepy-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
