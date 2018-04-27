@@ -9,6 +9,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Process status](#process-status)
   - [Hello world](#hello-world)
   - [Scull](#scull)
+  - [Sleepy](#sleepy)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
 - [References](#references)
@@ -179,6 +180,53 @@ drwxr-xr-x 2 kei wheel 4096 Apr 25 21:06 scull
 air1$
 ```
 
+### Sleepy
+
+[sleepy.ko] is a simple module to demonstrate the wait queue, as explained
+in [LDD chapter 5].
+
+[sleepy.ko]: sleepy/main.c
+
+```sh
+air1$ sudo insmod sleepy/sleepy.ko
+[ 1700.779823] sleepy_init
+[ 1700.780192] sleep0[246:0]: added
+[ 1700.780701] sleep1[246:1]: added
+[ 1700.781214] sleep2[246:2]: added
+[ 1700.781727] sleep3[246:3]: added
+air1$ ls -l /dev/sleep*
+crw------- 1 root root 246, 0 Apr 27 14:05 /dev/sleep0
+crw------- 1 root root 246, 1 Apr 27 14:05 /dev/sleep1
+crw------- 1 root root 246, 2 Apr 27 14:05 /dev/sleep2
+crw------- 1 root root 246, 3 Apr 27 14:05 /dev/sleep3
+```
+
+Let's read something from the sleepy device, e.g. `sleep3`:
+
+```sh
+air1$ sudo cat /dev/sleep3
+[ 1715.179215] sleepy_open(sleep3)
+[ 1715.183207] sleepy_read(sleep3)
+[ 1715.183859] process 6153 (cat) going to sleep
+```
+The `cat` process blocked, e.g. slept, inside `sleepy_read`.
+
+Now, from another teaminal, just write something to `/dev/sleep3`,
+e.g. `sudo bash -c date > /dev/sleep3`:
+
+```sh
+[ 1727.499938] sleepy_open(sleep3)
+[ 1727.503422] sleepy_write(sleep3)
+[ 1727.503845] process 6671 (date) awakening the reader...
+[ 1727.504461] awoken 6153 (cat)
+[ 1727.504828] sleepy_release(sleep3)
+[ 1727.506273] sleepy_release(sleep3)
+air1$
+```
+
+Process 6153, `cat` process, has been awoken by process 6671, through
+the sleepy_write() method call.
+
 ## Unload
 
 ```sh
@@ -214,6 +262,7 @@ total 8
 [LKD]: https://www.amazon.com/Linux-Kernel-Development-Robert-Love/dp/0672329468/ref=as_li_ss_tl?ie=UTF8&tag=roblov-20
 [LDD]: https://lwn.net/Kernel/LDD3/
 [LDD chapter 3]: https://lwn.net/images/pdf/LDD3/ch03.pdf
+[LDD chapter 5]: https://lwn.net/images/pdf/LDD3/ch05.pdf
 [Robert Love]: https://rlove.org/
 [Jonathan Corbet]: http://www.oreilly.com/pub/au/592
 [Alessandro Rubini]: http://www.linux.it/~rubini/
