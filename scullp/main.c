@@ -7,6 +7,7 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
+#include <linux/mutex.h>
 
 #define NR_SCULL_PIPE_DEV	4
 #define SCULL_PIPE_DEV_PREFIX	"scullp"
@@ -14,6 +15,7 @@
 
 /* scull pipe device descriptor */
 struct scullp {
+	struct mutex		lock;
 	struct device		dev;
 	struct cdev		cdev;
 } scullps[NR_SCULL_PIPE_DEV];
@@ -30,11 +32,21 @@ static int scullp_open(struct inode *i, struct file *f)
 
 static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
 {
+	struct scullp *s = f->private_data;
+
+	if (mutex_lock_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	mutex_unlock(&s->lock);
 	return -ENOTTY;
 }
 
 static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
 {
+	struct scullp *s = f->private_data;
+
+	if (mutex_lock_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	mutex_unlock(&s->lock);
 	return -ENOTTY;
 }
 
@@ -66,6 +78,7 @@ static void __init scullp_initialize(struct scullp *s, const dev_t dev_base, int
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &scullp_ops);
 	s->cdev.owner = THIS_MODULE;
+	mutex_init(&s->lock);
 }
 
 static int __init scullp_init(void)
