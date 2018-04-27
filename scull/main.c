@@ -124,25 +124,25 @@ static void trim_qset(struct scull *s)
 }
 
 /* Reset qset. */
-static int reset_qset(struct scull *s, int qset, int quantum)
+static int reset_qset(struct scull *s, int *qset, int *quantum)
 {
 	int ret = 0;
 
 	if (down_interruptible(&s->lock))
 		return -ERESTARTSYS;
 	/* pick the current value in case the new value is less than zero */
-	if (qset < 0)
-		qset = s->qset;
+	if (*qset < 0)
+		*qset = s->qset;
 	/* pick the current value in case the new value is less than zero */
-	if (quantum < 0)
-		quantum = s->quantum;
+	if (*quantum < 0)
+		*quantum = s->quantum;
 	/* No need to update the value */
-	if (s->qset == qset && s->quantum == quantum)
+	if (s->qset == *qset && s->quantum == *quantum)
 		goto out;
 	/* trim the quantum set before chaning the value */
 	trim_qset(s);
-	s->quantum = quantum;
-	s->qset = qset;
+	s->quantum = *quantum;
+	s->qset = *qset;
 out:
 	up(&s->lock);
 	return ret;
@@ -263,7 +263,7 @@ out:
 static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	struct scull *s = f->private_data;
-	int quantum;
+	int qset, quantum;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -289,15 +289,20 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case SCULL_IOCRESET:
-		err = reset_qset(s, scull_qset, scull_quantum);
+		quantum = scull_quantum;
+		qset = scull_qset;
+		err = reset_qset(s, &qset, &quantum);
 		break;
 	case SCULL_IOCSQUANTUM:
+		qset = -1; /* use the current qset */
 		err = __get_user(quantum, (int __user *)arg);
 		if (!err)
-			err = reset_qset(s, -1, quantum);
+			err = reset_qset(s, &qset, &quantum);
 		break;
 	case SCULL_IOCTQUANTUM:
-		err = reset_qset(s, -1, arg);
+		quantum = arg;
+		qset = -1; /* use the current qset */
+		err = reset_qset(s, &qset, &quantum);
 		break;
 	case SCULL_IOCGQUANTUM:
 		if (down_interruptible(&s->lock))
@@ -310,6 +315,15 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			return -ERESTARTSYS;
 		err = s->quantum;
 		up(&s->lock);
+		break;
+	case SCULL_IOCXQUANTUM:
+		qset = -1; /* use the current qset */
+		err = __get_user(quantum, (int __user *)arg);
+		if (!err)
+			err = reset_qset(s, &qset, &quantum);
+		else
+			quantum = -1;
+		err = __put_user(quantum, (int __user *)arg);
 		break;
 	default:
 		return -ENOTTY;
