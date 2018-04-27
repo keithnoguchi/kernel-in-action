@@ -391,10 +391,13 @@ static const struct file_operations scull_ops = {
 	.release = scull_release,
 };
 
-static void scull_initialize(struct scull *s, dev_t devt, const char *name)
+static void __init scull_initialize(struct scull *s, const dev_t dev_base, int i)
 {
+	char name[SCULL_DEV_NAME_LEN];
+
 	device_initialize(&s->dev);
-	s->dev.devt = devt;
+	s->dev.devt = MKDEV(MAJOR(dev_base), MINOR(dev_base) + i);
+	sprintf(name, SCULL_DEV_PREFIX "%d", i);
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &scull_ops);
 	s->cdev.owner = THIS_MODULE;
@@ -420,13 +423,9 @@ static int __init scull_init(void)
 
 	/* create scull devices */
 	for (s = sculls, i = 0; i < nr_dev; s++, i++) {
-		dev_t devt = MKDEV(MAJOR(dev_base), MINOR(dev_base) + i);
-		char name[SCULL_DEV_NAME_LEN];
+		scull_initialize(s, dev_base, i);
 
-		sprintf(name, SCULL_DEV_PREFIX "%d", i);
-		scull_initialize(s, devt, name);
-
-		/* add the device into the character device subsystem */
+		/* add cdev into the character device subsystem */
 		err = cdev_device_add(&s->cdev, &s->dev);
 		if (err)
 			goto unregister;
@@ -437,7 +436,7 @@ static int __init scull_init(void)
 
 	return 0;
 unregister:
-	/* only delete the added devices */
+	/* only delete already added devices */
 	for (s = sculls, j = 0; j < i; s++, j++) {
 		cdev_device_del(&s->cdev, &s->dev);
 		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
@@ -454,6 +453,8 @@ static void __exit scull_exit(void)
 	dev_t dev_base = sculls[0].dev.devt;
 	struct scull *s;
 	int i;
+
+	pr_info("%s\n", __FUNCTION__);
 
 	for (s = sculls, i = 0; i < nr_dev; s++, i++) {
 		cdev_device_del(&s->cdev, &s->dev);
