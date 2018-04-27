@@ -28,6 +28,16 @@ static int scullp_open(struct inode *i, struct file *f)
 	return 0;
 }
 
+static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
+{
+	return -ENOTTY;
+}
+
+static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
+{
+	return -ENOTTY;
+}
+
 static int scullp_release(struct inode *i, struct file *f)
 {
 	struct scullp *s = f->private_data;
@@ -40,6 +50,8 @@ static int scullp_release(struct inode *i, struct file *f)
 
 static const struct file_operations scullp_ops = {
 	.open = scullp_open,
+	.read = scullp_read,
+	.write = scullp_write,
 	.release = scullp_release,
 };
 
