@@ -310,6 +310,11 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		qset = -1; /* use the current qset */
 		err = reset_qset(s, &qset, &quantum);
 		break;
+	case SCULL_IOCTQSET:
+		quantum = -1; /* use the current quantum */
+		qset = arg;
+		err = reset_qset(s, &qset, &quantum);
+		break;
 	case SCULL_IOCGQUANTUM:
 		if (down_interruptible(&s->lock))
 			return -ERESTARTSYS;
