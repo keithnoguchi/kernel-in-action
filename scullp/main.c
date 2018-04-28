@@ -24,7 +24,7 @@
 #define scullp_debug(fmt, ...)                                         \
 	do {                                                           \
 		if (is_scullp_debug())                                 \
-			printk(KERN_INFO "%s[%s]: " pr_fmt(fmt),       \
+			printk(KERN_INFO "%s[%s]: " pr_fmt(fmt) "\n",  \
 			       module_name(THIS_MODULE), __FUNCTION__, \
                                ##__VA_ARGS__);                         \
 	} while (0)
