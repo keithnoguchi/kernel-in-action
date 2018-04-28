@@ -57,7 +57,7 @@ static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t 
 	err = 0;
 	add_wait_queue(&s->inwq, &w);
 	while ((size = readable_size(s)) <= 0) {
-		prepare_to_wait(&s->inwq, &w, TASK_INTERRUPTIBLE);
+		prepare_to_wait_exclusive(&s->inwq, &w, TASK_INTERRUPTIBLE);
 		err = -EAGAIN;
 		if (f->f_flags & O_NONBLOCK)
 			break;
@@ -128,7 +128,7 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 	err = 0;
 	add_wait_queue(&s->ewq, &w);
 	while ((size = writable_size(s)) <= 0) {
-		prepare_to_wait(&s->ewq, &w, TASK_INTERRUPTIBLE);
+		prepare_to_wait_exclusive(&s->ewq, &w, TASK_INTERRUPTIBLE);
 		err = -EAGAIN;
 		if (f->f_flags & O_NONBLOCK)
 			break;
