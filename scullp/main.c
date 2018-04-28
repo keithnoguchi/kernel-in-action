@@ -33,19 +33,74 @@ struct scullp {
 	struct cdev			cdev;
 } scullps[NR_SCULL_PIPE_DEV];
 
+/* how much data ready for read? */
+static inline size_t readable_size(const struct scullp *s)
+{
+	if (s->readp == s->writep)
+		return 0;
+	return (s->writep + s->size - s->readp) % s->size;
+}
+
 static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
 {
 	struct scullp *s = f->private_data;
+	DEFINE_WAIT(w);
+	size_t size;
+	int err;
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
+
+	/* wait for buffer to be ready to read */
+	err = 0;
+	add_wait_queue(&s->inwq, &w);
+	while ((size = readable_size(s)) <= 0) {
+		prepare_to_wait(&s->inwq, &w, TASK_INTERRUPTIBLE);
+		err = -EAGAIN;
+		if (f->f_flags & O_NONBLOCK)
+			break;
+		err = -EINTR;
+		if (signal_pending(current))
+			break;
+		mutex_unlock(&s->lock);
+		schedule();
+		if (mutex_lock_interruptible(&s->lock))
+			return -ERESTARTSYS;
+		err = 0; /* reset error before next try */
+	}
+	finish_wait(&s->inwq, &w);
+
+	/* error happened while waiting for the buffer */
+	if (err)
+		goto out;
+
+	/* adjust the length of the buffer to read */
+	len = min(len, size);
+	if (s->readp > s->writep)
+		len = min(len, (size_t)(s->size - s->readp));
+
+	/* copy to the user buffer */
+	err = -EFAULT;
+	if (copy_to_user(buf, s->buffer + s->readp, len))
+		goto out;
+
+	/* adjust the read position and the return value */
+	s->readp += len;
+	if (s->readp == s->size)
+		s->readp = 0;
+	err = len;
+
+	/* finally, wake up the writer */
+	wake_up_interruptible(&s->ewq);
+out:
 	mutex_unlock(&s->lock);
-	return -ENOTTY;
+	return err;
 }
 
-/* get the writable size in the buffer */
-static inline size_t writable_size(struct scullp *s)
+/* how much space available for write? */
+static inline size_t writable_size(const struct scullp *s)
 {
 	size_t size;
 
@@ -62,14 +117,15 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 {
 	struct scullp *s = f->private_data;
 	DEFINE_WAIT(w);
-	int err = 0;
 	size_t size;
+	int err;
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
 
-	/* wait for the buffer is ready to write */
+	/* wait for the buffer to be ready for write */
+	err = 0;
 	add_wait_queue(&s->ewq, &w);
 	while ((size = writable_size(s)) <= 0) {
 		prepare_to_wait(&s->ewq, &w, TASK_INTERRUPTIBLE);
@@ -83,8 +139,7 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 		schedule();
 		if (mutex_lock_interruptible(&s->lock))
 			return -ERESTARTSYS;
-		/* reset error before the next try */
-		err = 0;
+		err = 0; /* reset error before next try */
 	}
 	finish_wait(&s->ewq, &w);
 
@@ -92,19 +147,17 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 	if (err)
 		goto out;
 
-	/* adjust the length of the buffer to copy */
+	/* adjust the length of the buffer to write */
 	len = min(len, size);
 	if (s->writep >= s->readp)
 		len = min(len, (size_t)(s->size - s->writep));
-	else
-		len = min(len, (size_t)(s->readp - s->writep - 1));
 
 	/* copy from the user space */
 	err = -EFAULT;
 	if (copy_from_user((s->buffer + s->writep), buf, len))
 		goto out;
 
-	/* update the next write position and the return value */
+	/* update the write position and the return value */
 	s->writep += len;
 	if (s->writep == s->size)
 		s->writep = 0;
