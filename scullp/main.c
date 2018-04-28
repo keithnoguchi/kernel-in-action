@@ -223,7 +223,7 @@ static int scullp_release(struct inode *i, struct file *f)
 	return 0;
 }
 
-static const struct file_operations scullp_ops = {
+static const struct file_operations scullp_ops __initconst = {
 	.read = scullp_read,
 	.write = scullp_write,
 	.open = scullp_open,
@@ -253,7 +253,7 @@ static int __init scullp_initialize(struct scullp *s, const dev_t dev_base, int 
 	return 0;
 }
 
-static void __exit scullp_terminate(struct scullp *s)
+static void scullp_terminate(struct scullp *s)
 {
 	scullp_debug("deleting %s[%d:%d]", dev_name(&s->dev),
 		     MAJOR(s->dev.devt), MINOR(s->dev.devt));
