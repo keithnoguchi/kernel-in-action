@@ -35,18 +35,12 @@ struct scullp {
 
 /* module wide variable, to be controled by module parameters */
 static int buffer_size = SCULLP_DEFAULT_BUFFER_SIZE;
-module_param(buffer_size, int, S_IRUGO|S_IWUSR);
+module_param(buffer_size, int, S_IRUGO);
 
 static inline int scullp_buffer_size(void)
 {
-	int size;
-
-	/* lock is required with sysfs, as explained in kernel/moduleparam.h */
-	kernel_param_lock(THIS_MODULE);
-	size = buffer_size;
-	kernel_param_unlock(THIS_MODULE);
-
-	return size;
+	/* no lock required, as it's read only */
+	return buffer_size;
 }
 
 /* how much data ready for read? */
@@ -190,13 +184,8 @@ static int scullp_open(struct inode *i, struct file *f)
 {
 	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
 
-	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
-
-	s->size = scullp_buffer_size();
-	s->buffer = kzalloc(s->size, GFP_KERNEL);
-	if (!s->buffer)
-		return -ENOMEM;
-	s->readp = s->writep = 0;
+	pr_info("%s: %s(%s)\n", module_name(THIS_MODULE),
+		__FUNCTION__, dev_name(&s->dev));
 	f->private_data = s;
 
 	return 0;
@@ -206,11 +195,8 @@ static int scullp_release(struct inode *i, struct file *f)
 {
 	struct scullp *s = f->private_data;
 
-	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
-	if (s->buffer)
-		kfree(s->buffer);
-	s->buffer = NULL;
-	s->readp = s->writep = s->size = 0;
+	pr_info("%s: %s(%s)\n", module_name(THIS_MODULE),
+		__FUNCTION__, dev_name(&s->dev));
 	f->private_data = NULL;
 
 	return 0;
@@ -223,7 +209,7 @@ static const struct file_operations scullp_ops = {
 	.release = scullp_release,
 };
 
-static void __init scullp_initialize(struct scullp *s, const dev_t dev_base, int i)
+static int __init scullp_initialize(struct scullp *s, const dev_t dev_base, int i)
 {
 	char name[SCULLP_DEV_NAME_LEN];
 
@@ -237,12 +223,30 @@ static void __init scullp_initialize(struct scullp *s, const dev_t dev_base, int
 	init_waitqueue_head(&s->ewq);
 	init_waitqueue_head(&s->inwq);
 	mutex_init(&s->lock);
+	s->size = scullp_buffer_size();
+	s->buffer = kzalloc(s->size, GFP_KERNEL);
+	if (!s->buffer)
+		return -ENOMEM;
+	s->readp = s->writep = 0;
+
+	return 0;
+}
+
+static void __exit scullp_terminate(struct scullp *s)
+{
+	pr_info("%s: deleting %s[%d:%d]\n", module_name(THIS_MODULE),
+		dev_name(&s->dev), MAJOR(s->dev.devt), MINOR(s->dev.devt));
+	cdev_device_del(&s->cdev, &s->dev);
+	if (s->buffer)
+		kfree(s->buffer);
+	s->buffer = NULL;
+	s->readp = s->writep = s->size = 0;
 }
 
 static int __init scullp_init(void)
 {
 	int nr_dev = ARRAY_SIZE(scullps);
-	struct scullp *s = scullps;
+	struct scullp *s;
 	dev_t dev_base;
 	int i, j;
 	int err;
@@ -255,8 +259,11 @@ static int __init scullp_init(void)
 		return err;
 
 	/* register the char devices. */
+	s = scullps;
 	for (i = 0; i < nr_dev; i++, s++) {
-		scullp_initialize(s, dev_base, i);
+		err = scullp_initialize(s, dev_base, i);
+		if (err)
+			goto unregister;
 		err = cdev_device_add(&s->cdev, &s->dev);
 		if (err)
 			goto unregister;
@@ -265,8 +272,9 @@ static int __init scullp_init(void)
 	}
 	return 0;
 unregister:
-	for (j = 0; j < i; j++)
-		cdev_device_del(&s->cdev, &s->dev);
+	s = scullps;
+	for (j = 0; j < i; j++, s++)
+		scullp_terminate(s);
 	unregister_chrdev_region(dev_base, nr_dev);
 	return err;
 }
@@ -280,11 +288,8 @@ static void __exit scullp_exit(void)
 	int i;
 
 	pr_info("%s\n", __FUNCTION__);
-	for (i = 0; i < nr_dev; i++, s++) {
-		cdev_device_del(&s->cdev, &s->dev);
-		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
-			MAJOR(s->dev.devt), MINOR(s->dev.devt));
-	}
+	for (i = 0; i < nr_dev; i++, s++)
+		scullp_terminate(s);
 	unregister_chrdev_region(dev_base, nr_dev);
 }
 module_exit(scullp_exit);
