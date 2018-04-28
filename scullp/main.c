@@ -15,10 +15,10 @@
 #include <linux/uaccess.h>
 #include <asm/page.h>
 
-#define NR_SCULL_PIPE_DEV		4
-#define SCULL_PIPE_BUFFER_SIZ		PAGE_SIZE
-#define SCULL_PIPE_DEV_PREFIX		"scullp"
-#define SCULL_PIPE_DEV_NAME_LEN		(strlen(SCULL_PIPE_DEV_PREFIX) + 2)
+#define NR_SCULLP_DEV			4
+#define SCULLP_DEFAULT_BUFFER_SIZE	PAGE_SIZE
+#define SCULLP_DEV_PREFIX		"scullp"
+#define SCULLP_DEV_NAME_LEN		(strlen(SCULLP_DEV_PREFIX) + 2)
 
 /* scull pipe device descriptor */
 struct scullp {
@@ -31,7 +31,23 @@ struct scullp {
 	size_t				writep;
 	struct device			dev;
 	struct cdev			cdev;
-} scullps[NR_SCULL_PIPE_DEV];
+} scullps[NR_SCULLP_DEV];
+
+/* module wide variable, to be controled by module parameters */
+static int buffer_size = SCULLP_DEFAULT_BUFFER_SIZE;
+module_param(buffer_size, int, S_IRUGO|S_IWUSR);
+
+static inline int scullp_buffer_size(void)
+{
+	int size;
+
+	/* lock is required with sysfs, as explained in kernel/moduleparam.h */
+	kernel_param_lock(THIS_MODULE);
+	size = buffer_size;
+	kernel_param_unlock(THIS_MODULE);
+
+	return size;
+}
 
 /* how much data ready for read? */
 static inline size_t readable_size(const struct scullp *s)
@@ -176,7 +192,7 @@ static int scullp_open(struct inode *i, struct file *f)
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
 
-	s->size = SCULL_PIPE_BUFFER_SIZ;
+	s->size = scullp_buffer_size();
 	s->buffer = kzalloc(s->size, GFP_KERNEL);
 	if (!s->buffer)
 		return -ENOMEM;
@@ -209,12 +225,12 @@ static const struct file_operations scullp_ops = {
 
 static void __init scullp_initialize(struct scullp *s, const dev_t dev_base, int i)
 {
-	char name[SCULL_PIPE_DEV_NAME_LEN];
+	char name[SCULLP_DEV_NAME_LEN];
 
 	memset(&s->dev, 0, sizeof(s->dev));
 	device_initialize(&s->dev);
 	s->dev.devt = MKDEV(MAJOR(dev_base), MINOR(dev_base)+i);
-	sprintf(name, SCULL_PIPE_DEV_PREFIX "%d", i);
+	sprintf(name, SCULLP_DEV_PREFIX "%d", i);
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &scullp_ops);
 	s->cdev.owner = THIS_MODULE;
@@ -234,7 +250,7 @@ static int __init scullp_init(void)
 	pr_info("%s\n", __FUNCTION__);
 
 	/* allocate the base device number */
-	err = alloc_chrdev_region(&dev_base, 0, nr_dev, SCULL_PIPE_DEV_PREFIX);
+	err = alloc_chrdev_region(&dev_base, 0, nr_dev, SCULLP_DEV_PREFIX);
 	if (err)
 		return err;
 
