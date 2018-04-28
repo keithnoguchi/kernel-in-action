@@ -12,6 +12,7 @@
 #include <linux/slab.h>
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
+#include <linux/uaccess.h>
 #include <asm/page.h>
 
 #define NR_SCULL_PIPE_DEV		4
@@ -43,7 +44,7 @@ static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t 
 	return -ENOTTY;
 }
 
-/* get the next write position */
+/* get the writable size in the buffer */
 static inline size_t writable_size(struct scullp *s)
 {
 	size_t size;
@@ -61,7 +62,7 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 {
 	struct scullp *s = f->private_data;
 	DEFINE_WAIT(w);
-	int err = -EINVAL;
+	int err = 0;
 	size_t size;
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
@@ -70,7 +71,7 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 
 	/* wait for the buffer is ready to write */
 	add_wait_queue(&s->ewq, &w);
-	while ((size = writable_size(s)) < 0) {
+	while ((size = writable_size(s)) <= 0) {
 		prepare_to_wait(&s->ewq, &w, TASK_INTERRUPTIBLE);
 		err = -EAGAIN;
 		if (f->f_flags & O_NONBLOCK)
@@ -84,6 +85,32 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 			return -ERESTARTSYS;
 	}
 	finish_wait(&s->ewq, &w);
+
+	/* error happened while waiting for the buffer */
+	if (err)
+		goto out;
+
+	/* adjust the length of the buffer to copy */
+	len = min(len, size);
+	if (s->writep >= s->readp)
+		len = min(len, (size_t)(s->size - s->writep));
+	else
+		len = min(len, (size_t)(s->readp - s->writep - 1));
+
+	/* copy from the user space */
+	err = -EFAULT;
+	if (copy_from_user((s->buffer + s->writep), buf, len))
+		goto out;
+
+	/* update the next write position and the return value */
+	s->writep += len;
+	if (s->writep == s->size)
+		s->writep = 0;
+	err = len;
+
+	/* finally, wake up the reader */
+	wake_up_interruptible(&s->inwq);
+out:
 	mutex_unlock(&s->lock);
 	return err;
 }
