@@ -16,10 +16,18 @@
 #include <asm/page.h>
 
 #define NR_SCULLP_DEV			4
-#define SCULLP_DEFAULT_DEBUG_STATE	1
+#define SCULLP_DEFAULT_DEBUG_STATUS	1
 #define SCULLP_DEFAULT_BUFFER_SIZE	PAGE_SIZE
 #define SCULLP_DEV_PREFIX		"scullp"
 #define SCULLP_DEV_NAME_LEN		(strlen(SCULLP_DEV_PREFIX) + 2)
+
+#define scullp_debug(fmt, ...)                                         \
+	do {                                                           \
+		if (is_scullp_debug())                                 \
+			printk(KERN_INFO "%s[%s]: " pr_fmt(fmt),       \
+			       module_name(THIS_MODULE), __FUNCTION__, \
+                               ##__VA_ARGS__);                         \
+	} while (0)
 
 /* scull pipe device descriptor */
 struct scullp {
@@ -34,8 +42,8 @@ struct scullp {
 	struct cdev			cdev;
 } scullps[NR_SCULLP_DEV];
 
-/* module wide variable, to be controled by module parameters and sysfs. */
-static int debug = SCULLP_DEFAULT_DEBUG_STATE;
+/* module wide variable, to be controled by module parameters and sysfs */
+static int debug = SCULLP_DEFAULT_DEBUG_STATUS;
 static int buffer_size = SCULLP_DEFAULT_BUFFER_SIZE;
 module_param(debug, int, S_IRUGO|S_IWUSR);
 module_param(buffer_size, int, S_IRUGO);
@@ -51,13 +59,6 @@ static inline int is_scullp_debug(void)
 
 	return is_debug ? 1 : 0;
 }
-
-#define scullp_debug(fmt, ...)                                           \
-	do {                                                             \
-		if (is_scullp_debug())                                   \
-			printk(KERN_INFO "%s: " pr_fmt(fmt),             \
-			       module_name(THIS_MODULE), ##__VA_ARGS__); \
-	} while (0)
 
 static inline int scullp_buffer_size(void)
 {
@@ -80,7 +81,7 @@ static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t 
 	size_t size;
 	int err;
 
-	scullp_debug("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	scullp_debug("reading from %s", dev_name(&s->dev));
 
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
@@ -152,7 +153,7 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 	size_t size;
 	int err;
 
-	scullp_debug("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	scullp_debug("writing on %s", dev_name(&s->dev));
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
 
@@ -206,7 +207,7 @@ static int scullp_open(struct inode *i, struct file *f)
 {
 	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
 
-	scullp_debug("%s: %s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	scullp_debug("opening %s", dev_name(&s->dev));
 	f->private_data = s;
 
 	return 0;
@@ -216,7 +217,7 @@ static int scullp_release(struct inode *i, struct file *f)
 {
 	struct scullp *s = f->private_data;
 
-	scullp_debug("%s: %s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+	scullp_debug("releasing %s", dev_name(&s->dev));
 	f->private_data = NULL;
 
 	return 0;
@@ -254,7 +255,7 @@ static int __init scullp_initialize(struct scullp *s, const dev_t dev_base, int 
 
 static void __exit scullp_terminate(struct scullp *s)
 {
-	scullp_debug("deleting %s[%d:%d]\n", dev_name(&s->dev),
+	scullp_debug("deleting %s[%d:%d]", dev_name(&s->dev),
 		     MAJOR(s->dev.devt), MINOR(s->dev.devt));
 	cdev_device_del(&s->cdev, &s->dev);
 	if (s->buffer)
@@ -271,7 +272,7 @@ static int __init scullp_init(void)
 	int i, j;
 	int err;
 
-	scullp_debug("%s\n", __FUNCTION__);
+	scullp_debug();
 
 	/* allocate the base device number */
 	err = alloc_chrdev_region(&dev_base, 0, nr_dev, SCULLP_DEV_PREFIX);
@@ -287,7 +288,7 @@ static int __init scullp_init(void)
 		err = cdev_device_add(&s->cdev, &s->dev);
 		if (err)
 			goto unregister;
-		scullp_debug("%s[%d:%d]: added\n", dev_name(&s->dev),
+		scullp_debug("added %s[%d:%d]", dev_name(&s->dev),
 			     MAJOR(s->dev.devt), MINOR(s->dev.devt));
 	}
 	return 0;
@@ -307,7 +308,7 @@ static void __exit scullp_exit(void)
 	dev_t dev_base = s->dev.devt;
 	int i;
 
-	scullp_debug("%s\n", __FUNCTION__);
+	scullp_debug();
 	for (i = 0; i < nr_dev; i++, s++)
 		scullp_terminate(s);
 	unregister_chrdev_region(dev_base, nr_dev);
