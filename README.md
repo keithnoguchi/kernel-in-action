@@ -22,20 +22,61 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
 Top level `make` will do the work:
 
 ```sh
+air1$ pwd
+/home/kei/src/linux-4.16.5/kernel-in-action
 air1$ make
-make -C /lib/modules/4.16.2.1/build M=/home/kei/git/kernel-in-action modules
-make[1]: Entering directory '/home/kei/src/linux-4.16.2'
-  CC [M]  /home/kei/git/kernel-in-action/ps/main.o
-  LD [M]  /home/kei/git/kernel-in-action/ps/ps.o
+make -C /lib/modules/4.16.5.d/build M=/home/kei/src/linux-4.16.5/kernel-in-action modules
+make[1]: Entering directory '/home/kei/src/linux-4.16.5'
+  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/hello/main.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.o
+  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ps/main.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.o
+  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scull/main.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.o
+  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scullp/main.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scullp/scullp.o
+  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/sleepy/main.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/sleepy/sleepy.o
   Building modules, stage 2.
-  MODPOST 1 modules
-  CC      /home/kei/git/kernel-in-action/ps/ps.mod.o
-  LD [M]  /home/kei/git/kernel-in-action/ps/ps.ko
-make[1]: Leaving directory '/home/kei/src/linux-4.16.2'
+  MODPOST 5 modules
+  CC      /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.mod.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.ko
+  CC      /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.mod.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.ko
+  CC      /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.mod.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.ko
+  CC      /home/kei/src/linux-4.16.5/kernel-in-action/scullp/scullp.mod.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scullp/scullp.ko
+  CC      /home/kei/src/linux-4.16.5/kernel-in-action/sleepy/sleepy.mod.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/sleepy/sleepy.ko
+make[1]: Leaving directory '/home/kei/src/linux-4.16.5'
+air1$
+```
+
+and also, `sudo make modules_install` also works and all the modules will be
+installed in the right location, which will allow `modprobe` to find those
+modules.
+
+```sh
+air1$ pwd
+/home/kei/src/linux-4.16.5/kernel-in-action
+air1$ sudo make modules_install
+make -C /lib/modules/4.16.5.d/build M=/home/kei/src/linux-4.16.5/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.5'
+  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/sleepy/sleepy.ko
+  DEPMOD  4.16.5.d
+make[1]: Leaving directory '/home/kei/src/linux-4.16.5'
 air1$
 ```
 
 ## Load
+
+You can use `insmod`, or `modprobe` in case you installed those modules
+`sudo make modules_install` as explained in [build](#build) section.
 
 ### Process status
 
@@ -44,7 +85,7 @@ air1$
 [ps.ko]: ps/main.c
 
 ```sh
-air1$ sudo insmod ps/ps.ko
+air1$ sudo modprobe ps
 [ 3467.251298] systemd[1]
 [ 3467.252030] kthreadd[2]
 [ 3467.252509] kworker/0:0H[4]
@@ -124,7 +165,7 @@ air1$
 [hello.ko]: hello/main.c
 
 ```sh
-air1$ sudo insmod hello/hello.ko
+air1$ sudo modprobe hello
 [ 9151.462539] hello_init
 [ 9151.464501] Hello world!
 [ 9152.478305] Hello world!
@@ -144,9 +185,7 @@ air1$ sudo rmmod hello
 [scull.ko]: scull/main.c
 
 ```sh
-air1$ pwd
-/home/kei/src/linux-4.16.4/kernel-in-action
-air1$ sudo insmod ./scull/scull.ko
+air1$ sudo modprobe scull
 [ 2470.008335] scull0[246:0]: added
 [ 2470.008894] scull1[246:1]: added
 [ 2470.009638] scull2[246:2]: added
@@ -189,7 +228,7 @@ in [LDD chapter 5].
 [sleepy.ko]: sleepy/main.c
 
 ```sh
-air1$ sudo insmod sleepy/sleepy.ko
+air1$ sudo modprobe sleepy
 [ 1700.779823] sleepy_init
 [ 1700.780192] sleep0[246:0]: added
 [ 1700.780701] sleep1[246:1]: added
@@ -241,46 +280,36 @@ in [LDD chapter 5].  This is a great example to show case kernel's
 First load the module:
 
 ```sh
-air1$ sudo insmod ./scullp/scullp.ko
-[ 3995.004539] scullp_init
-[ 3995.005225] scullp0[246:0]: added
-[ 3995.006296] scullp1[246:1]: added
-[ 3995.007199] scullp2[246:2]: added
-[ 3995.007850] scullp3[246:3]: added
+air1$ sudo modprobe scullp
+[  586.546778] scullp[scullp_init]:
+[  586.547248] scullp[scullp_init]: added scullp0[247:0]
+[  586.547944] scullp[scullp_init]: added scullp1[247:1]
+[  586.548669] scullp[scullp_init]: added scullp2[247:2]
+[  586.549427] scullp[scullp_init]: added scullp3[247:3]
+air1$
 ```
 
 and read it with `cat` command:
 
 ```sh
-arch01$ sudo cat /dev/scullp2
-[ 4011.317763] scullp_open(scullp2)
-[ 4011.318324] scullp_read(scullp2)
+air1$ sudo cat /dev/scullp2
+[  625.119341] scullp[scullp_open]: opening scullp2
+[  625.120004] scullp[scullp_read]: reading from scullp2
+
 ```
 
 From a different terminal, write some data, e.g.
 `sudo bash -c 'date > /dev/scullp2'` to fill a data to the pipe:
 
 ```
-[ 4032.844110] scullp_open(scullp2)
-[ 4032.845555] scullp_write(scullp2)
-Sat Apr 28 00:20:43 PDT 2018
-[ 4032.847081] scullp_read(scullp2)
-[ 4032.847647] scullp_release(scullp2)
+[  647.724218] scullp[scullp_open]: opening scullp2
+[  647.725966] scullp[scullp_write]: writing on scullp2
+Sat Apr 28 10:32:36 PDT 2018
+[  647.727783] scullp[scullp_read]: reading from scullp2
+[  647.728700] scullp[scullp_release]: releasing scullp2
 
-[ 4035.138452] scullp_open(scullp2)
-[ 4035.139859] scullp_write(scullp2)
-Sat Apr 28 00:20:46 PDT 2018
-[ 4035.141323] scullp_read(scullp2)
-[ 4035.142055] scullp_release(scullp2)
-
-[ 4065.367475] scullp_open(scullp2)
-[ 4065.368306] scullp_write(scullp2)
-Sat Apr 28 00:21:16 PDT 2018
-[ 4065.369263] scullp_read(scullp2)
-[ 4065.369905] scullp_release(scullp2)
-[ 4077.927057] scullp_release(scullp2)
 ^C
-air$
+air1$
 ```
 
 As above, you can see the `date` output on the console.
