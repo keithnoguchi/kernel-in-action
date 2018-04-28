@@ -97,8 +97,8 @@ static struct scull_qset *get_qset(struct scull *s, int item)
 	return *dptr;
 }
 
-/* trim the quantum set. */
-static void trim_qset(struct scull *s)
+/* trim the quantum set. s->lock is held by the caller. */
+static void __trim_qset(struct scull *s)
 {
 	struct scull_qset *next, *dptr;
 	int qset = s->qset;
@@ -121,24 +121,44 @@ static void trim_qset(struct scull *s)
 	s->size = 0;
 }
 
-/* Reset qset. */
-static int reset_qset(struct scull *s, int *qset, int *quantum)
+/* trim the quantum set. */
+static int trim_qset(struct scull *s)
 {
+	pr_info("%s\n", __FUNCTION__);
+
 	if (down_interruptible(&s->lock))
 		return -ERESTARTSYS;
-	/* pick the current value in case the new value is less than zero */
-	if (*qset < 0)
-		*qset = s->qset;
-	/* pick the current value in case the new value is less than zero */
-	if (*quantum < 0)
-		*quantum = s->quantum;
+	__trim_qset(s);
+	up(&s->lock);
+	return 0;
+}
+
+/* Reset quantum set. */
+static int reset_qset(struct scull *s, int *qset, int *quantum)
+{
+	int new_qset, new_quantum;
+
+	pr_info("%s\n", __FUNCTION__);
+
+	if (down_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	/* pick the new value if it's passed, otherwise, the current value. */
+	if (qset)
+		new_qset = *qset;
+	else
+		new_qset = s->qset;
+	/* pick the new value if it's passed, otherwise, the current value. */
+	if (quantum)
+		new_quantum = *quantum;
+	else
+		new_quantum = s->quantum;
 	/* No need to update the value */
-	if (s->qset == *qset && s->quantum == *quantum)
+	if (s->qset == new_qset && s->quantum == new_quantum)
 		goto out;
 	/* trim the quantum set before chaning the value */
-	trim_qset(s);
-	s->quantum = *quantum;
-	s->qset = *qset;
+	__trim_qset(s);
+	s->quantum = new_quantum;
+	s->qset = new_qset;
 out:
 	up(&s->lock);
 	return 0;
@@ -148,17 +168,18 @@ out:
 static int scull_open(struct inode *i, struct file *f)
 {
 	struct scull *s = container_of(i->i_cdev, struct scull, cdev);
+	int err = 0;
 
 	pr_info("%s\n", __FUNCTION__);
 
 	/* for read/write */
 	f->private_data = s;
 
-	/* trim the device when it was opened as write-only and non append mode. */
+	/* reset the qset when it was opened as write-only and non append mode. */
 	if ((f->f_flags & O_ACCMODE) == O_WRONLY && !(f->f_flags & O_APPEND))
-		trim_qset(s);
+		err = trim_qset(s);
 
-	return 0;
+	return err;
 }
 
 static ssize_t scull_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
@@ -290,26 +311,22 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		err = reset_qset(s, &qset, &quantum);
 		break;
 	case SCULL_IOCSQUANTUM:
-		qset = -1; /* use the current qset */
 		err = __get_user(quantum, (int __user *)arg);
 		if (!err)
-			err = reset_qset(s, &qset, &quantum);
+			err = reset_qset(s, NULL, &quantum);
 		break;
 	case SCULL_IOCSQSET:
-		quantum = -1; /* use the current quantum */
 		err = __get_user(qset, (int __user *)arg);
 		if (!err)
-			err = reset_qset(s, &qset, &quantum);
+			err = reset_qset(s, &qset, NULL);
 		break;
 	case SCULL_IOCTQUANTUM:
 		quantum = arg;
-		qset = -1; /* use the current qset */
-		err = reset_qset(s, &qset, &quantum);
+		err = reset_qset(s, NULL, &quantum);
 		break;
 	case SCULL_IOCTQSET:
-		quantum = -1; /* use the current quantum */
 		qset = arg;
-		err = reset_qset(s, &qset, &quantum);
+		err = reset_qset(s, &qset, NULL);
 		break;
 	case SCULL_IOCGQUANTUM:
 		if (down_interruptible(&s->lock))
@@ -336,34 +353,30 @@ static long scull_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		up(&s->lock);
 		break;
 	case SCULL_IOCXQUANTUM:
-		qset = -1; /* use the current qset */
 		err = __get_user(quantum, (int __user *)arg);
 		if (!err)
-			err = reset_qset(s, &qset, &quantum);
+			err = reset_qset(s, NULL, &quantum);
 		else
 			quantum = -1;
 		err = __put_user(quantum, (int __user *)arg);
 		break;
 	case SCULL_IOCXQSET:
-		quantum = -1; /* use the current quantum */
 		err = __get_user(qset, (int __user *)arg);
 		if (!err)
-			err = reset_qset(s, &qset, &quantum);
+			err = reset_qset(s, &qset, NULL);
 		else
 			qset = -1;
 		err = __put_user(qset, (int __user *)arg);
 		break;
 	case SCULL_IOCHQUANTUM:
-		qset = -1; /* use the current qset */
 		quantum = arg;
-		err = reset_qset(s, &qset, &quantum);
+		err = reset_qset(s, NULL, &quantum);
 		if (!err)
 			err = quantum;
 		break;
 	case SCULL_IOCHQSET:
-		quantum = -1; /* use the current quantum */
 		qset = arg;
-		err = reset_qset(s, &qset, &quantum);
+		err = reset_qset(s, &qset, NULL);
 		if (!err)
 			err = qset;
 		break;
@@ -459,7 +472,7 @@ static void __exit scull_exit(void)
 		pr_info("%s[%d:%d]: deleted\n", dev_name(&s->dev),
 			MAJOR(s->dev.devt), MINOR(s->dev.devt));
 		/* free the quantum sets */
-		trim_qset(s);
+		__trim_qset(s);
 	}
 	unregister_chrdev_region(dev_base, nr_dev);
 }
