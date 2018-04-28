@@ -10,6 +10,8 @@
 #include <linux/wait.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/sched.h>
+#include <linux/sched/signal.h>
 #include <asm/page.h>
 
 #define NR_SCULL_PIPE_DEV		4
@@ -23,8 +25,9 @@ struct scullp {
 	wait_queue_head_t		ewq;
 	wait_queue_head_t		inwq;
 	char				*buffer;
-	int				size;
-	int				rp, wp;
+	size_t				size;
+	size_t				readp;
+	size_t				writep;
 	struct device			dev;
 	struct cdev			cdev;
 } scullps[NR_SCULL_PIPE_DEV];
@@ -33,21 +36,56 @@ static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t 
 {
 	struct scullp *s = f->private_data;
 
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
 	mutex_unlock(&s->lock);
 	return -ENOTTY;
 }
 
+/* get the next write position */
+static inline size_t writable_size(struct scullp *s)
+{
+	size_t size;
+
+	if (s->readp == s->writep)
+		size = s->size;
+	else
+		size = (s->readp + s->size - s->writep) % s->size;
+
+	/* -1 to indicate no more writable buffer. */
+	return size - 1;
+}
+
 static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
 {
 	struct scullp *s = f->private_data;
-	DEFINE_WAIT(wait);
+	DEFINE_WAIT(w);
+	int err = -EINVAL;
+	size_t size;
 
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
+
+	/* wait for the buffer is ready to write */
+	add_wait_queue(&s->ewq, &w);
+	while ((size = writable_size(s)) < 0) {
+		prepare_to_wait(&s->ewq, &w, TASK_INTERRUPTIBLE);
+		err = -EAGAIN;
+		if (f->f_flags & O_NONBLOCK)
+			break;
+		err = -EINTR;
+		if (signal_pending(current))
+			break;
+		mutex_unlock(&s->lock);
+		schedule();
+		if (mutex_lock_interruptible(&s->lock))
+			return -ERESTARTSYS;
+	}
+	finish_wait(&s->ewq, &w);
 	mutex_unlock(&s->lock);
-	return -ENOTTY;
+	return err;
 }
 
 static int scullp_open(struct inode *i, struct file *f)
@@ -55,11 +93,12 @@ static int scullp_open(struct inode *i, struct file *f)
 	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
 
 	pr_info("%s(%s)\n", __FUNCTION__, dev_name(&s->dev));
+
 	s->size = SCULL_PIPE_BUFFER_SIZ;
 	s->buffer = kzalloc(s->size, GFP_KERNEL);
 	if (!s->buffer)
 		return -ENOMEM;
-	s->rp = s->wp = 0;
+	s->readp = s->writep = 0;
 	f->private_data = s;
 
 	return 0;
@@ -73,7 +112,7 @@ static int scullp_release(struct inode *i, struct file *f)
 	if (s->buffer)
 		kfree(s->buffer);
 	s->buffer = NULL;
-	s->size = s->rp = s->wp = 0;
+	s->readp = s->writep = s->size = 0;
 	f->private_data = NULL;
 
 	return 0;
