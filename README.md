@@ -10,6 +10,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Hello world](#hello-world)
   - [Scull](#scull)
   - [Sleepy](#sleepy)
+  - [Scullp](#scullp)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
 - [References](#references)
@@ -226,6 +227,63 @@ air1$
 
 Process 6153, `cat` process, has been awoken by process 6671, through
 the sleepy_write() method call.
+
+### Scullp
+
+[scullp.ko] is a pipe version of the scull, which blocks both in read/write
+while there is no enough data to read or enough space to write, as explained
+in [LDD chapter 5].  This is a great example to show case kernel's
+[wait queue].
+
+[scullp.ko]: scullp/main.c
+[wait queue]: https://github.com/torvalds/linux/blob/master/include/linux/wait.h
+
+First load the module:
+
+```sh
+air1$ sudo insmod ./scullp/scullp.ko
+[ 3995.004539] scullp_init
+[ 3995.005225] scullp0[246:0]: added
+[ 3995.006296] scullp1[246:1]: added
+[ 3995.007199] scullp2[246:2]: added
+[ 3995.007850] scullp3[246:3]: added
+```
+
+and read it with `cat` command:
+
+```sh
+arch01$ sudo cat /dev/scullp2
+[ 4011.317763] scullp_open(scullp2)
+[ 4011.318324] scullp_read(scullp2)
+```
+
+From a different terminal, write some data, e.g.
+`sudo bash -c 'date > /dev/scullp2'` to fill a data to the pipe:
+
+```
+[ 4032.844110] scullp_open(scullp2)
+[ 4032.845555] scullp_write(scullp2)
+Sat Apr 28 00:20:43 PDT 2018
+[ 4032.847081] scullp_read(scullp2)
+[ 4032.847647] scullp_release(scullp2)
+
+[ 4035.138452] scullp_open(scullp2)
+[ 4035.139859] scullp_write(scullp2)
+Sat Apr 28 00:20:46 PDT 2018
+[ 4035.141323] scullp_read(scullp2)
+[ 4035.142055] scullp_release(scullp2)
+
+[ 4065.367475] scullp_open(scullp2)
+[ 4065.368306] scullp_write(scullp2)
+Sat Apr 28 00:21:16 PDT 2018
+[ 4065.369263] scullp_read(scullp2)
+[ 4065.369905] scullp_release(scullp2)
+[ 4077.927057] scullp_release(scullp2)
+^C
+air$
+```
+
+As above, you can see the `date` output on the console.
 
 ## Unload
 
