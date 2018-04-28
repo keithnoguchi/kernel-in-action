@@ -83,6 +83,8 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 		schedule();
 		if (mutex_lock_interruptible(&s->lock))
 			return -ERESTARTSYS;
+		/* reset error before the next try */
+		err = 0;
 	}
 	finish_wait(&s->ewq, &w);
 
