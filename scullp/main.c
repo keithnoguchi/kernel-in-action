@@ -232,7 +232,7 @@ static int scullp_release(struct inode *i, struct file *f)
 	return 0;
 }
 
-static const struct file_operations scullp_ops __initconst = {
+static const struct file_operations scullp_ops = {
 	.read = scullp_read,
 	.write = scullp_write,
 	.poll = scullp_poll,
