@@ -59,9 +59,9 @@ int main(void)
 		printf("wakeup\n");
 
 		if (FD_ISSET(rfd, &rfds))
-			printf("read ready\n");
+			printf("ready to read\n");
 		else if (FD_ISSET(wfd, &wfds))
-			printf("write ready\n");
+			printf("ready to write\n");
 	}
 
 out:

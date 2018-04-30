@@ -13,6 +13,7 @@
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
 #include <linux/uaccess.h>
+#include <linux/poll.h>
 #include <asm/page.h>
 
 #define NR_SCULLP_DEV			4
@@ -57,7 +58,7 @@ static inline int is_scullp_debug(void)
 	is_debug = debug;
 	kernel_param_unlock(THIS_MODULE);
 
-	return is_debug ? 1 : 0;
+	return is_debug;
 }
 
 static inline int scullp_buffer_size(void)
@@ -69,8 +70,6 @@ static inline int scullp_buffer_size(void)
 /* how much data ready for read? */
 static inline size_t readable_size(const struct scullp *s)
 {
-	if (s->readp == s->writep)
-		return 0;
 	return (s->writep + s->size - s->readp) % s->size;
 }
 
@@ -142,7 +141,15 @@ static inline size_t writable_size(const struct scullp *s)
 	else
 		size = (s->readp + s->size - s->writep) % s->size;
 
-	/* -1 to indicate no more writable buffer. */
+	/*
+	 * Since the buffer is circular, we keep the write pointer
+	 * one before the read pointer in case of the full buffer
+	 * so that we can differenciate the case between the buffer
+	 * empty and the buffer full.
+	 *
+	 * empty: s->readp == s->writep
+	 * full:  s->write + 1 == s->readp
+	 */
 	return size - 1;
 }
 
@@ -204,10 +211,23 @@ out:
 	return err;
 }
 
-static __poll_t scullp_poll(struct file *f, struct poll_table_struct *p)
+static __poll_t scullp_poll(struct file *f, poll_table *p)
 {
-	scullp_debug("polling");
-	return 0;
+	struct scullp *s = f->private_data;
+	__poll_t ret = 0;
+
+	scullp_debug("polling on %s", dev_name(&s->dev));
+
+	if (mutex_lock_interruptible(&s->lock))
+		return -ERESTARTSYS;
+	poll_wait(f, &s->ewq, p);
+	poll_wait(f, &s->inwq, p);
+	if (readable_size(s) > 0)
+		ret |= POLLIN|POLLRDNORM;
+	if (writable_size(s) > 0)
+		ret |= POLLOUT|POLLWRNORM;
+	mutex_unlock(&s->lock);
+	return ret;
 }
 
 static int scullp_open(struct inode *i, struct file *f)
