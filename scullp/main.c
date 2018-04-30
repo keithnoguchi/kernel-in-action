@@ -204,6 +204,12 @@ out:
 	return err;
 }
 
+static __poll_t scullp_poll(struct file *f, struct poll_table_struct *p)
+{
+	scullp_debug("polling");
+	return 0;
+}
+
 static int scullp_open(struct inode *i, struct file *f)
 {
 	struct scullp *s = container_of(i->i_cdev, struct scullp, cdev);
@@ -229,6 +235,7 @@ static int scullp_release(struct inode *i, struct file *f)
 static const struct file_operations scullp_ops __initconst = {
 	.read = scullp_read,
 	.write = scullp_write,
+	.poll = scullp_poll,
 	.open = scullp_open,
 	.release = scullp_release,
 };
