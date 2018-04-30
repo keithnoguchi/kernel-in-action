@@ -33,8 +33,8 @@
 /* scull pipe device descriptor */
 struct scullp {
 	struct mutex			lock;
-	wait_queue_head_t		ewq;
 	wait_queue_head_t		inwq;
+	wait_queue_head_t		outwq;
 	char				*buffer;
 	size_t				size;
 	size_t				readp;
@@ -71,6 +71,24 @@ static inline int scullp_buffer_size(void)
 static inline size_t readable_size(const struct scullp *s)
 {
 	return (s->writep + s->size - s->readp) % s->size;
+}
+
+/* how much space available for write? */
+static inline size_t writable_size(const struct scullp *s)
+{
+	/*
+	 * Since the buffer is circular, we keep the write pointer
+	 * one before the read pointer in case of the full buffer
+	 * so that we can differenciate the case between the buffer
+	 * empty and the buffer full.
+	 *
+	 * empty: s->readp     == s->writep
+	 * full:  s->write + 1 == s->readp
+	 */
+	if (s->readp == s->writep)
+		return s->size - 1;
+
+	return ((s->readp + s->size - s->writep) % s->size) - 1;
 }
 
 static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t *pos)
@@ -125,32 +143,10 @@ static ssize_t scullp_read(struct file *f, char __user *buf, size_t len, loff_t 
 	err = len;
 
 	/* finally, wake up the writer */
-	wake_up_interruptible(&s->ewq);
+	wake_up_interruptible(&s->outwq);
 out:
 	mutex_unlock(&s->lock);
 	return err;
-}
-
-/* how much space available for write? */
-static inline size_t writable_size(const struct scullp *s)
-{
-	size_t size;
-
-	if (s->readp == s->writep)
-		size = s->size;
-	else
-		size = (s->readp + s->size - s->writep) % s->size;
-
-	/*
-	 * Since the buffer is circular, we keep the write pointer
-	 * one before the read pointer in case of the full buffer
-	 * so that we can differenciate the case between the buffer
-	 * empty and the buffer full.
-	 *
-	 * empty: s->readp == s->writep
-	 * full:  s->write + 1 == s->readp
-	 */
-	return size - 1;
 }
 
 static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, loff_t *pos)
@@ -167,9 +163,9 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 
 	/* wait for the buffer to be ready for write */
 	err = 0;
-	add_wait_queue(&s->ewq, &w);
+	add_wait_queue(&s->outwq, &w);
 	while ((size = writable_size(s)) <= 0) {
-		prepare_to_wait_exclusive(&s->ewq, &w, TASK_INTERRUPTIBLE);
+		prepare_to_wait_exclusive(&s->outwq, &w, TASK_INTERRUPTIBLE);
 		err = -EAGAIN;
 		if (f->f_flags & O_NONBLOCK)
 			break;
@@ -182,7 +178,7 @@ static ssize_t scullp_write(struct file *f, const char __user *buf, size_t len, 
 			return -ERESTARTSYS;
 		err = 0; /* reset error before next try */
 	}
-	finish_wait(&s->ewq, &w);
+	finish_wait(&s->outwq, &w);
 
 	/* error happened while waiting for the buffer */
 	if (err)
@@ -220,8 +216,8 @@ static __poll_t scullp_poll(struct file *f, poll_table *p)
 
 	if (mutex_lock_interruptible(&s->lock))
 		return -ERESTARTSYS;
-	poll_wait(f, &s->ewq, p);
 	poll_wait(f, &s->inwq, p);
+	poll_wait(f, &s->outwq, p);
 	if (readable_size(s) > 0)
 		ret |= POLLIN|POLLRDNORM;
 	if (writable_size(s) > 0)
@@ -271,8 +267,8 @@ static int __init scullp_initialize(struct scullp *s, const dev_t dev_base, int 
 	s->dev.init_name = name;
 	cdev_init(&s->cdev, &scullp_ops);
 	s->cdev.owner = THIS_MODULE;
-	init_waitqueue_head(&s->ewq);
 	init_waitqueue_head(&s->inwq);
+	init_waitqueue_head(&s->outwq);
 	mutex_init(&s->lock);
 	s->size = scullp_buffer_size();
 	s->buffer = kzalloc(s->size, GFP_KERNEL);
