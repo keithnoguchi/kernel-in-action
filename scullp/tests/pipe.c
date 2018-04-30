@@ -7,34 +7,45 @@
 #include <unistd.h>
 #include <errno.h>
 
+#define SCULLP_DEV_NAME		"/dev/scullp0"
+
 /* nonblocking pipe command. */
 int main(int argc, char *argv[])
 {
 	int delay = 1, n = 0, m = 0;
 	int rfd = -1, wfd = -1;
 	const char *cmd = NULL;
-	int ret = EXIT_SUCCESS;
 	char buffer[4096];
+	int ret;
 
 	if (argc > 1)
 		delay = atoi(argv[1]);
 	printf("delay=%d");
 
+	cmd = "open";
+	rfd = open(SCULLP_DEV_NAME, O_RDONLY);
+	if (rfd == -1)
+		goto out;
 	cmd = "fcntl";
-	ret = fcntl(0, F_SETFL, fcntl(rfd, F_GETFL)|O_NONBLOCK);
+	ret = fcntl(rfd, F_SETFL, fcntl(rfd, F_GETFL)|O_NONBLOCK);
 	if (ret == -1)
-		goto done;
+		goto out;
+
+	cmd = "open";
+	wfd = open(SCULLP_DEV_NAME, O_WRONLY);
+	if (wfd == -1)
+		goto out;
 	cmd = "fcntl";
-	ret = fcntl(1, F_SETFL, fcntl(wfd, F_GETFL)|O_NONBLOCK);
+	ret = fcntl(wfd, F_SETFL, fcntl(wfd, F_GETFL)|O_NONBLOCK);
 	if (ret == -1)
-		goto done;
+		goto out;
 
 	while (1) {
 		cmd = "read";
-		n = read(0, buffer, sizeof(buffer));
+		n = read(rfd, buffer, sizeof(buffer));
 		if (n >= 0) {
 			cmd = "write";
-			m = write(1, buffer, n);
+			m = write(wfd, buffer, n);
 		}
 		if ((n < 0 || m < 0) && (errno != EAGAIN)) {
 			printf("exiting...\n");
@@ -42,10 +53,14 @@ int main(int argc, char *argv[])
 		}
 		sleep(delay);
 	}
-done:
+out:
+	if (rfd != -1)
+		close(rfd);
+	if (wfd != -1)
+		close(wfd);
 	if (cmd) {
 		perror(cmd);
-		ret = EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
-	return ret;
+	return EXIT_SUCCESS;
 }
