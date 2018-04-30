@@ -19,7 +19,7 @@ int main(void)
 	const char *err_name = NULL;
 	int rfd, wfd, maxfd;
 	struct timeval tv;
-	fd_set rfds;
+	fd_set rfds, wfds;
 	int ret;
 
 	printf("select(2) based scullp.ko tests\n");
@@ -27,11 +27,13 @@ int main(void)
 	/* initialize the file descriptors. */
 	rfd = wfd = maxfd = -1;
 
+	/* read descriptor */
 	err_name = "open(" SCULLP_DEV_NAME ")";
 	ret = rfd = open(dev_name, O_RDONLY);
 	if (rfd == -1)
 		goto out;
 
+	/* write descriptor */
 	err_name = "open(" SCULLP_DEV_NAME ")";
 	ret = wfd = open(dev_name, O_WRONLY);
 	if (wfd == -1)
@@ -46,13 +48,20 @@ int main(void)
 		/* select(2) requires resetting rfds before the call */
 		FD_ZERO(&rfds);
 		FD_SET(rfd, &rfds);
+		FD_ZERO(&wfds);
+		FD_SET(wfd, &wfds);
 
 		err_name = "select";
-		ret = select(maxfd, &rfds, NULL, NULL, &tv);
+		ret = select(maxfd, &rfds, &wfds, NULL, &tv);
 		if (ret == -1) {
 			goto out;
 		}
 		printf("wakeup\n");
+
+		if (FD_ISSET(rfd, &rfds))
+			printf("read ready\n");
+		else if (FD_ISSET(wfd, &wfds))
+			printf("write ready\n");
 	}
 
 out:
