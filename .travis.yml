@@ -25,6 +25,7 @@ arch:
     - linux-headers
   script:
     - KERNDIR=$(ls -d /lib/modules/*-ARCH|head -1)/build make
+    - sudo make install
 script:
   - |
     if [ "${CI_UBUNTU}"    != "" ]; then
