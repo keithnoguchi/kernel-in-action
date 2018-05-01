@@ -26,6 +26,14 @@ static int writer_test(void)
 			.sleep_sec	= 1,
 			.sleep_usec	= 0,
 		},
+		{
+			.name		= "writer ready on read-write fd",
+			.dev_name	= "/dev/scullp1",
+			.flags		= O_RDWR,
+			.mode		= S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+		},
 		{ /* sentry */ },
 	};
 	const struct test *t;
