@@ -13,7 +13,44 @@
 #define max(A, B)		((A) > (B) ? (A) : (B))
 #endif /* !max */
 
-int main(void)
+
+static int open_test(void)
+{
+	const struct test {
+		const char	*name;
+		const char	*dev_name;
+		int		flags;
+		mode_t		mode;
+	} tests[] = {
+		{
+			.name =		"read only",
+			.dev_name =	"/dev/scullp0",
+			.flags =	O_RDONLY,
+			.mode =		S_IRUSR,
+		},
+		{
+			/* sentry */
+		},
+	};
+	const struct test *t;
+	char buf[BUFSIZ];
+	int err;
+	int i;
+
+	i = 1;
+	for (t = tests; t->name != NULL; t++) {
+		snprintf(buf, BUFSIZ, "%d: %s", i++, t->name);
+		err = open(t->dev_name, t->flags, t->mode);
+		if (err == -1) {
+			perror(buf);
+			return 1;
+		}
+		printf("%s [OK]\n", buf);
+	}
+	return 0;
+}
+
+static int old_test(void)
 {
 	const char *dev_name = SCULLP_DEV_NAME;
 	const char *err_name = NULL;
@@ -73,4 +110,11 @@ out:
 		perror(err_name);
 
 	return ret;
+}
+
+int main(void)
+{
+	if (open_test())
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
