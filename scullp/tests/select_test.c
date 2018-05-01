@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/select.h>
 
 #include "kselftest.h"
@@ -17,6 +18,7 @@ static int writer_test(int *i)
 		mode_t		mode;
 		long		sleep_sec;
 		long		sleep_usec;
+		size_t		data_size;
 	} tests[] = {
 		{
 			.name		= "write ready on write only fd",
@@ -25,6 +27,7 @@ static int writer_test(int *i)
 			.mode		= S_IWUSR,
 			.sleep_sec	= 1,
 			.sleep_usec	= 0,
+			.data_size	= 0,
 		},
 		{
 			.name		= "write ready on read-write fd",
@@ -33,9 +36,29 @@ static int writer_test(int *i)
 			.mode		= S_IWUSR,
 			.sleep_sec	= 1,
 			.sleep_usec	= 0,
+			.data_size	= 0,
+		},
+		{
+			.name		= "write 1 byte on write only fd",
+			.dev_name	= "/dev/scullp0",
+			.flags		= O_WRONLY,
+			.mode		= S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+			.data_size	= 1,
+		},
+		{
+			.name		= "write 1 byte on read-write fd",
+			.dev_name	= "/dev/scullp1",
+			.flags		= O_RDWR,
+			.mode		= S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+			.data_size	= 1,
 		},
 		{ /* sentry */ },
 	};
+	const char buf[BUFSIZ];
 	const struct test *t;
 	int fd;
 
@@ -72,6 +95,24 @@ static int writer_test(int *i)
 
 			if (!FD_ISSET(fd, &fds)) {
 				puts("write is not ready");
+				goto fail;
+			}
+
+			if (!t->data_size)
+				break; /* nothing to write */
+
+			errno = 0;
+			ret = write(fd, buf, t->data_size);
+			if (ret == -1) {
+				perror("write");
+				goto fail;
+			}
+			if (errno) {
+				perror("write");
+				goto fail;
+			}
+			if (ret != t->data_size) {
+				puts("can't write full data");
 				goto fail;
 			}
 			break;
