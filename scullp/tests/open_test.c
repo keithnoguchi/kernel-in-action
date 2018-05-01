@@ -7,7 +7,7 @@
 
 #include "kselftest.h"
 
-static int open_test(void)
+static int open_test(int *i)
 {
 	const struct test {
 		const char	*name;
@@ -33,11 +33,9 @@ static int open_test(void)
 	};
 	const struct test *t;
 	int fd;
-	int i;
 
-	i = 1;
 	for (t = tests; t->name != NULL; t++) {
-		printf("%2d) %-16s: ", i++, t->name);
+		printf("%2d) %-16s: ", (*i)++, t->name);
 		fd = open(t->dev_name, t->flags, t->mode);
 		if (fd == -1) {
 			perror("open");
@@ -59,7 +57,9 @@ fail:
 
 int main(void)
 {
-	if (open_test())
+	int i = 1;
+
+	if (open_test(&i))
 		ksft_exit_fail();
 	ksft_exit_pass();
 }
