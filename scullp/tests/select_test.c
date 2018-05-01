@@ -8,7 +8,7 @@
 
 #include "kselftest.h"
 
-static int writer_test(void)
+static int writer_test(int *i)
 {
 	const struct test {
 		const char	*name;
@@ -19,7 +19,7 @@ static int writer_test(void)
 		long		sleep_usec;
 	} tests[] = {
 		{
-			.name		= "writer ready on write only fd",
+			.name		= "write ready on write only fd",
 			.dev_name	= "/dev/scullp0",
 			.flags		= O_WRONLY,
 			.mode		= S_IWUSR,
@@ -27,7 +27,7 @@ static int writer_test(void)
 			.sleep_usec	= 0,
 		},
 		{
-			.name		= "writer ready on read-write fd",
+			.name		= "write ready on read-write fd",
 			.dev_name	= "/dev/scullp1",
 			.flags		= O_RDWR,
 			.mode		= S_IWUSR,
@@ -38,16 +38,14 @@ static int writer_test(void)
 	};
 	const struct test *t;
 	int fd;
-	int i;
 
-	i = 1;
 	for (t = tests; t->name; t++) {
 		struct timeval tv;
 		int maxfd;
 		fd_set fds;
 		int ret;
 
-		printf("%2d) %-32s: ", i++, t->name);
+		printf("%2d) %-32s: ", (*i)++, t->name);
 
 		/* initialize the file descriptors. */
 		fd = maxfd = -1;
@@ -95,9 +93,101 @@ fail:
 	return 1;
 }
 
+static int reader_test(int *i)
+{
+	const struct test {
+		const char	*name;
+		const char	*dev_name;
+		int		flags;
+		mode_t		mode;
+		long		sleep_sec;
+		long		sleep_usec;
+		size_t		data_size;
+	} tests[] = {
+		{
+			.name		= "read ready for 1 byte data",
+			.dev_name	= "/dev/scullp1",
+			.flags		= O_RDWR,
+			.mode		= S_IRUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+			.data_size	= 1,
+		},
+		{ /* sentry */ },
+	};
+	const struct test *t;
+	char buf[BUFSIZ];
+	int fd;
+
+	for (t = tests; t->name; t++) {
+		struct timeval tv;
+		int maxfd;
+		fd_set fds;
+		int ret;
+
+		printf("%2d) %-32s: ", (*i)++, t->name);
+
+		/* initialize the file descriptors. */
+		fd = maxfd = -1;
+
+		fd = open(t->dev_name, t->flags, t->mode);
+		if (fd == -1) {
+			perror("open");
+			goto fail;
+		}
+
+		/* write dummy data */
+		ret = write(fd, buf, t->data_size);
+		if (ret != t->data_size) {
+			perror("write");
+			goto fail;
+		}
+
+		/* select(2) based loop */
+		maxfd = fd + 1;
+		while (1) {
+			/* select(2) requires resetting the values on every call */
+			tv.tv_sec = t->sleep_sec;
+			tv.tv_usec = t->sleep_usec;
+			FD_ZERO(&fds);
+			FD_SET(fd, &fds);
+			ret = select(maxfd, &fds, NULL, NULL, &tv);
+			if (ret == -1) {
+				perror("select");
+				goto fail;
+			}
+
+			if (!FD_ISSET(fd, &fds)) {
+				puts("read is not ready");
+				goto fail;
+			}
+			break;
+		}
+		if (close(fd)) {
+			fd = -1;
+			goto fail;
+		}
+		ksft_inc_pass_cnt();
+		puts("PASS");
+	}
+	return 0;
+
+fail:
+	if (fd != -1)
+		close(fd);
+	ksft_inc_fail_cnt();
+	puts("FAIL");
+	return 1;
+}
+
 int main(void)
 {
-	if (writer_test())
+	int i = 1;
+
+	if (writer_test(&i))
 		ksft_exit_fail();
+	if (reader_test(&i))
+		ksft_exit_fail();
+
 	ksft_exit_pass();
 }
