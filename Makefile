@@ -12,9 +12,14 @@ install: modules_install
 modules modules_install help clean:
 	$(MAKE) -C $(KERNDIR) M=$(shell pwd) $@
 
-TESTS = scull
-check: kselftest
+TARGETS = scull
+TARGETS += scullp
+run_tests check: kselftest
 kselftest:
-	for d in $(TESTS); do $(Q)$(MAKE) -C ./$${d}/tests/ run_tests; done
+	for TARGET in $(TARGETS); do                                                       \
+		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests -C ./$$TARGET/tests/ run_tests; \
+	done
 kselftest-clean:
-	for d in $(TESTS); do $(Q)$(MAKE) -C ./$${d}/tests/ clean; done
+	for TARGET in $(TARGETS); do                                                   \
+		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests -C ./$$TARGET/tests/ clean; \
+	done
