@@ -11,6 +11,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Scull](#scull)
   - [Sleepy](#sleepy)
   - [Scullp](#scullp)
+- [Test](#test)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
 - [References](#references)
@@ -313,6 +314,56 @@ air1$
 ```
 
 As above, you can see the `date` output on the console.
+
+## Test
+
+It has a kernel's selftest based test cases.
+
+Make sure you load the target module(s):
+
+```sh
+air1$ sudo lsmod | grep scull
+scullp                 20480  0
+scull                  20480  0
+```
+
+then, run `make run_tests` with the root priviledge:
+
+```
+air1$ sudo make run_tests
+make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
+TAP version 13
+selftests: ioctl_test
+========================================
+1. ioctl(SCULL_IOC?QSET)
+2. ioctl(SCULL_IOC?QUANTUM)
+ok 1..1 selftests: ioctl_test [PASS]
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
+make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
+TAP version 13
+selftests: open_test
+========================================
+ 1) read only       : PASS
+ 2) write only      : PASS
+Pass 2 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
+1..2
+ok 1..1 selftests: open_test [PASS]
+selftests: select_test
+========================================
+ 1) write ready on write only fd                    : PASS
+ 2) write ready on read-write fd                    : PASS
+ 3) write 1 byte on write only fd                   : PASS
+ 4) write 1 byte on read-write fd                   : PASS
+ 5) write 1024 bytes on write only fd               : PASS
+ 6) write 1024 bytes on read-write fd               : PASS
+ 7) read 1 byte of data                             : PASS
+ 8) read 1024 bytes of data                         : PASS
+Pass 8 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
+1..8
+ok 1..2 selftests: select_test [PASS]
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
+air1$
+```
 
 ## Unload
 
