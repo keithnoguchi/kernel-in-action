@@ -37,7 +37,7 @@ static int open_test(void)
 
 	i = 1;
 	for (t = tests; t->name != NULL; t++) {
-		printf("%d: %s: ", i++, t->name);
+		printf("%2d) %-16s: ", i++, t->name);
 		fd = open(t->dev_name, t->flags, t->mode);
 		if (fd == -1) {
 			perror("open");
@@ -48,11 +48,12 @@ static int open_test(void)
 			goto fail;
 		}
 		ksft_inc_pass_cnt();
-		puts("[OK]");
+		puts("PASS");
 	}
 	return 0;
 fail:
 	ksft_inc_fail_cnt();
+	puts("FAIL");
 	return 1;
 }
 

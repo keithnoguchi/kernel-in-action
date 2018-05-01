@@ -6,78 +6,90 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-#define SELECT_INTERVAL		2		/* wakes up every 2 sec */
-#define SCULLP_DEV_NAME		"/dev/scullp0"	/* scullp device name */
+#include "kselftest.h"
 
-#ifndef max
-#define max(A, B)		((A) > (B) ? (A) : (B))
-#endif /* !max */
-
-static int select_test(void)
+static int writer_test(void)
 {
-	const char *dev_name = SCULLP_DEV_NAME;
-	const char *err_name = NULL;
-	int rfd, wfd, maxfd;
-	struct timeval tv;
-	fd_set rfds, wfds;
-	int ret;
+	const struct test {
+		const char	*name;
+		const char	*dev_name;
+		int		flags;
+		mode_t		mode;
+		long		sleep_sec;
+		long		sleep_usec;
+	} tests[] = {
+		{
+			.name		= "writer ready on write only fd",
+			.dev_name	= "/dev/scullp0",
+			.flags		= O_WRONLY,
+			.mode		= S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+		},
+		{ /* sentry */ },
+	};
+	const struct test *t;
+	int fd;
+	int i;
 
-	printf("select(2) based scullp.ko tests\n");
+	i = 1;
+	for (t = tests; t->name; t++) {
+		struct timeval tv;
+		int maxfd;
+		fd_set fds;
+		int ret;
 
-	/* initialize the file descriptors. */
-	rfd = wfd = maxfd = -1;
+		printf("%2d) %-32s: ", i++, t->name);
 
-	/* read descriptor */
-	err_name = "open(" SCULLP_DEV_NAME ")";
-	ret = rfd = open(dev_name, O_RDONLY);
-	if (rfd == -1)
-		goto out;
+		/* initialize the file descriptors. */
+		fd = maxfd = -1;
 
-	/* write descriptor */
-	err_name = "open(" SCULLP_DEV_NAME ")";
-	ret = wfd = open(dev_name, O_WRONLY);
-	if (wfd == -1)
-		goto out;
-
-	/* select(2) based loop */
-	maxfd = max(rfd, wfd) + 1;
-	while (1) {
-		tv.tv_sec = SELECT_INTERVAL;
-		tv.tv_usec = 0;
-
-		/* select(2) requires resetting rfds before the call */
-		FD_ZERO(&rfds);
-		FD_SET(rfd, &rfds);
-		FD_ZERO(&wfds);
-		FD_SET(wfd, &wfds);
-
-		err_name = "select";
-		ret = select(maxfd, &rfds, &wfds, NULL, &tv);
-		if (ret == -1) {
-			goto out;
+		fd = open(t->dev_name, t->flags, t->mode);
+		if (fd == -1) {
+			perror("open");
+			goto fail;
 		}
-		printf("wakeup\n");
 
-		if (FD_ISSET(rfd, &rfds))
-			printf("ready to read\n");
-		else if (FD_ISSET(wfd, &wfds))
-			printf("ready to write\n");
+		/* select(2) based loop */
+		maxfd = fd + 1;
+		while (1) {
+			/* select(2) requires resetting the values on every call */
+			tv.tv_sec = t->sleep_sec;
+			tv.tv_usec = t->sleep_usec;
+			FD_ZERO(&fds);
+			FD_SET(fd, &fds);
+			ret = select(maxfd, NULL, &fds, NULL, &tv);
+			if (ret == -1) {
+				perror("select");
+				goto fail;
+			}
+
+			if (!FD_ISSET(fd, &fds)) {
+				puts("write is not ready");
+				goto fail;
+			}
+			break;
+		}
+		if (close(fd)) {
+			fd = -1;
+			goto fail;
+		}
+		ksft_inc_pass_cnt();
+		puts("PASS");
 	}
+	return 0;
 
-out:
-	if (wfd != -1)
-		close(wfd);
-	if (rfd != -1)
-		close(rfd);
-	if (ret < 0)
-		perror(err_name);
-
-	return ret;
+fail:
+	if (fd != -1)
+		close(fd);
+	ksft_inc_fail_cnt();
+	puts("FAIL");
+	return 1;
 }
 
 int main(void)
 {
-	if (select_test())
-		return EXIT_FAILURE;
-	return EXIT_SUCCESS;
+	if (writer_test())
+		ksft_exit_fail();
+	ksft_exit_pass();
 }
