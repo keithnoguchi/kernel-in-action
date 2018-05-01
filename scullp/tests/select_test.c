@@ -57,7 +57,7 @@ static int writer_test(int *i)
 			.data_size	= 1,
 		},
 		{
-			.name		= "write 1024 byte on write only fd",
+			.name		= "write 1024 bytes on write only fd",
 			.dev_name	= "/dev/scullp0",
 			.flags		= O_WRONLY,
 			.mode		= S_IWUSR,
@@ -66,7 +66,7 @@ static int writer_test(int *i)
 			.data_size	= 1024,
 		},
 		{
-			.name		= "write 1024 byte on read-write fd",
+			.name		= "write 1024 bytes on read-write fd",
 			.dev_name	= "/dev/scullp1",
 			.flags		= O_RDWR,
 			.mode		= S_IWUSR,
@@ -86,7 +86,7 @@ static int writer_test(int *i)
 		fd_set fds;
 		int ret;
 
-		printf("%2d) %-32s: ", (*i)++, t->name);
+		printf("%2d) %-48s: ", (*i)++, t->name);
 
 		/* initialize the file descriptors. */
 		fd = maxfd = -1;
@@ -193,7 +193,7 @@ static int reader_test(int *i)
 		fd_set fds;
 		int ret;
 
-		printf("%2d) %-32s: ", (*i)++, t->name);
+		printf("%2d) %-48s: ", (*i)++, t->name);
 
 		/* initialize the file descriptors. */
 		fd = maxfd = -1;
