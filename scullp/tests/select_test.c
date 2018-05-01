@@ -164,13 +164,22 @@ static int reader_test(int *i)
 		size_t		data_size;
 	} tests[] = {
 		{
-			.name		= "read ready for 1 byte data",
+			.name		= "read 1 byte of data",
 			.dev_name	= "/dev/scullp1",
 			.flags		= O_RDWR,
-			.mode		= S_IRUSR,
+			.mode		= S_IRUSR|S_IWUSR,
 			.sleep_sec	= 1,
 			.sleep_usec	= 0,
 			.data_size	= 1,
+		},
+		{
+			.name		= "read 1024 bytes of data",
+			.dev_name	= "/dev/scullp1",
+			.flags		= O_RDWR,
+			.mode		= S_IRUSR|S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+			.data_size	= 1024,
 		},
 		{ /* sentry */ },
 	};
@@ -218,6 +227,21 @@ static int reader_test(int *i)
 
 			if (!FD_ISSET(fd, &fds)) {
 				puts("read is not ready");
+				goto fail;
+			}
+
+			errno = 0;
+			ret = read(fd, buf, t->data_size);
+			if (ret == -1) {
+				perror("read");
+				goto fail;
+			}
+			if (errno) {
+				perror("read");
+				goto fail;
+			}
+			if (ret != t->data_size) {
+				puts("can't read full data");
 				goto fail;
 			}
 			break;
