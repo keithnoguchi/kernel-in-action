@@ -56,6 +56,24 @@ static int writer_test(int *i)
 			.sleep_usec	= 0,
 			.data_size	= 1,
 		},
+		{
+			.name		= "write 1024 byte on write only fd",
+			.dev_name	= "/dev/scullp0",
+			.flags		= O_WRONLY,
+			.mode		= S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+			.data_size	= 1024,
+		},
+		{
+			.name		= "write 1024 byte on read-write fd",
+			.dev_name	= "/dev/scullp1",
+			.flags		= O_RDWR,
+			.mode		= S_IWUSR,
+			.sleep_sec	= 1,
+			.sleep_usec	= 0,
+			.data_size	= 1024,
+		},
 		{ /* sentry */ },
 	};
 	const char buf[BUFSIZ];
