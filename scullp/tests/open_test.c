@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "kselftest.h"
+
 static int open_test(void)
 {
 	const struct test {
@@ -39,20 +41,24 @@ static int open_test(void)
 		fd = open(t->dev_name, t->flags, t->mode);
 		if (fd == -1) {
 			perror("open");
-			return 1;
+			goto fail;
 		}
 		if (close(fd)) {
 			perror("close");
-			return 1;
+			goto fail;
 		}
+		ksft_inc_pass_cnt();
 		puts("[OK]");
 	}
 	return 0;
+fail:
+	ksft_inc_fail_cnt();
+	return 1;
 }
 
 int main(void)
 {
 	if (open_test())
-		return EXIT_FAILURE;
-	return EXIT_SUCCESS;
+		ksft_exit_fail();
+	ksft_exit_pass();
 }
