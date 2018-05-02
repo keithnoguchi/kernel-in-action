@@ -4,6 +4,7 @@ obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/
 obj-m += scullp/
+obj-m += sculld/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
