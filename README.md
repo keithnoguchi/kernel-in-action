@@ -12,6 +12,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Sleepy](#sleepy)
   - [Scullp](#scullp)
   - [Ldd](#ldd)
+  - [Sculld](#sculld)
 - [Test](#test)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
@@ -338,7 +339,7 @@ As above, you can see the `date` output on the console.
 
 ### Ldd
 
-[Ldd] is a virtual bus layer for the sculld driver, explained in [LDD chapter 14]:
+[Ldd] is a virtual bus layer for the [sculld] driver, explained in [LDD chapter 14]:
 
 [ldd]: ldd/main.c
 
@@ -362,6 +363,37 @@ drwxr-xr-x 2 root root    0 May  1 18:56 drivers
 -rw-r--r-- 1 root root 4096 May  1 18:56 drivers_autoprobe
 --w------- 1 root root 4096 May  1 18:56 drivers_probe
 --w------- 1 root root 4096 May  1 18:55 uevent
+air1$
+```
+
+### Sculld
+
+[sculld] is a scull driver under [ldd] virtual bus, explained in [LDD chapter 14]:
+
+[sculld]: sculld/main.c
+
+```sh
+air1$ sudo make install
+make -C /lib/modules/4.16.7.1/build M=/home/kei/src/linux-4.16.7/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.7'
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ldd/ldd.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/sculld/sculld.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/sleepy/sleepy.ko
+  DEPMOD  4.16.7.1
+make[1]: Leaving directory '/home/kei/src/linux-4.16.7'
+air1$ sudo modprobe sculld
+air1$ ls -l /sys/bus/ldd/drivers/sculld/
+total 0
+--w------- 1 root root 4096 May  2 11:05 bind
+--w------- 1 root root 4096 May  2 11:05 uevent
+--w------- 1 root root 4096 May  2 11:05 unbind
+-r--r--r-- 1 root root 4096 May  2 11:05 version
+air1$ cat /sys/bus/ldd/drivers/sculld/version
+1.0
 air1$
 ```
 

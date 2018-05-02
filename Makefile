@@ -16,7 +16,7 @@ modules modules_install help clean:
 load: modules_install
 	@for MODULE in $(patsubst %/,%,$(obj-m)); do modprobe $$MODULE; done
 unload:
-	-@for MODULE in $(patsubst %/,%,$(obj-m)); do rmmod $$MODULE; done
+	-@for MODULE in $(patsubst %/,%,$(obj-m)); do modprobe -r $$MODULE; done
 reload: unload load
 
 TARGETS = scull
