@@ -3,7 +3,15 @@
 #ifndef _LDD_H
 #define _LDD_H
 
-/* ldd driver */
+/* ldd device */
+struct ldd_device {
+	const char		*name;
+	struct ldd_driver	*driver;
+	struct device		dev;
+};
+#define to_ldd_device(_dev)	container_of(_dev, struct lddd_device, dev)
+
+/* ldd device driver */
 struct ldd_driver {
 	const char		*version;
 	struct module		*module;
@@ -12,6 +20,8 @@ struct ldd_driver {
 };
 #define to_ldd_driver(_drv)	container_of(_drv, struct ldd_driver, driver)
 
+int register_ldd_device(struct ldd_device *dev);
+void unregister_ldd_device(struct ldd_device *dev);
 int register_ldd_driver(struct ldd_driver *drv);
 void unregister_ldd_driver(struct ldd_driver *drv);
 

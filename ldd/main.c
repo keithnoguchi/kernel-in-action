@@ -36,6 +36,27 @@ static struct bus_type ldd_bus_type = {
 	.uevent = ldd_uevent,
 };
 
+static void ldd_dev_release(struct device *dev)
+{
+	pr_info("%s\n", __FUNCTION__);
+}
+
+int register_ldd_device(struct ldd_device *dev)
+{
+	dev->dev.bus = &ldd_bus_type;
+	dev->dev.parent = &ldd_bus;
+	dev->dev.release = ldd_dev_release;
+	dev->dev.init_name = dev->name;
+	return device_register(&dev->dev);
+}
+EXPORT_SYMBOL(register_ldd_device);
+
+void unregister_ldd_device(struct ldd_device *dev)
+{
+	device_unregister(&dev->dev);
+}
+EXPORT_SYMBOL(unregister_ldd_device);
+
 static ssize_t show_version(struct device_driver *drv, char *buf)
 {
 	const struct ldd_driver *ldrv = to_ldd_driver(drv);
