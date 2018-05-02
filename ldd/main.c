@@ -80,7 +80,7 @@ void unregister_ldd_driver(struct ldd_driver *drv)
 }
 EXPORT_SYMBOL(unregister_ldd_driver);
 
-static int __init sculld_init(void)
+static int __init ldd_init(void)
 {
 	int err;
 
@@ -99,15 +99,15 @@ unregister:
 	bus_unregister(&ldd_bus_type);
 	return err;
 }
-module_init(sculld_init);
+module_init(ldd_init);
 
-static void __exit sculld_exit(void)
+static void __exit ldd_exit(void)
 {
 	pr_info("%s\n", __FUNCTION__);
 	device_unregister(&ldd_bus);
 	bus_unregister(&ldd_bus_type);
 }
-module_exit(sculld_exit);
+module_exit(ldd_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
