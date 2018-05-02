@@ -14,13 +14,16 @@ static int sysfs_test(int *i)
 		const char	*name;
 		const char	*sysfs_name;
 		int		flags;
-		mode_t		mode;
 	} tests[] = {
 		{
-			.name =		"bus sysfs",
+			.name =		"/sys/bus/ldd/drivers_autoprobe sysfs attribute",
 			.sysfs_name =	"/sys/bus/ldd/drivers_autoprobe",
 			.flags =	O_RDONLY,
-			.mode =		S_IRUSR,
+		},
+		{
+			.name =		"/sys/devices/ldd0/uevent sysfs attribute",
+			.sysfs_name =	"/sys/devices/ldd0/uevent",
+			.flags =	O_RDONLY,
 		},
 		{ /* sentry */ },
 	};
@@ -30,7 +33,7 @@ static int sysfs_test(int *i)
 		int fd;
 
 		printf("%2d) %-16s: ", (*i)++, t->name);
-		fd = open(t->sysfs_name, t->flags, t->mode);
+		fd = open(t->sysfs_name, t->flags);
 		if (fd == -1) {
 			perror("open");
 			goto fail;

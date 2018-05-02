@@ -5,6 +5,16 @@
 #include <linux/kernel.h>
 #include <linux/device.h>
 
+static void ldd_bus_release(struct device *d)
+{
+	pr_info("%s\n", __FUNCTION__);
+}
+
+static struct device ldd_bus = {
+	.init_name = "ldd0",
+	.release = ldd_bus_release,
+};
+
 static int ldd_match(struct device *dev, struct device_driver *drv)
 {
 	pr_info("%s\n", __FUNCTION__);
@@ -33,13 +43,21 @@ static int __init sculld_init(void)
 	if (err)
 		return err;
 
+	err = device_register(&ldd_bus);
+	if (err)
+		goto unregister;
+
 	return 0;
+unregister:
+	bus_unregister(&ldd_bus_type);
+	return err;
 }
 module_init(sculld_init);
 
 static void __exit sculld_exit(void)
 {
 	pr_info("%s\n", __FUNCTION__);
+	device_unregister(&ldd_bus);
 	bus_unregister(&ldd_bus_type);
 }
 module_exit(sculld_exit);
