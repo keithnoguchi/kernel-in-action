@@ -19,8 +19,17 @@ static struct ldd_driver sculld_driver = {
 	.module = THIS_MODULE,
 };
 
+static struct ldd_device sculld_devices[] = {
+	{ .name = "sculld0" },
+	{ .name = "sculld1" },
+	{ .name = "sculld2" },
+	{ .name = "sculld3" },
+	{ /* sentry */ },
+};
+
 static int __init sculld_init(void)
 {
+	struct ldd_device *d, *delete;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -35,14 +44,35 @@ static int __init sculld_init(void)
 	if (err)
 		return err;
 
+	/* register sculld devices */
+	for (d = sculld_devices; d->name; d++) {
+		err = register_ldd_device(d);
+		if (err)
+			goto unregister;
+		get_device(&d->dev); /* hold the static device */
+	}
 	return 0;
+unregister:
+	/*
+	 * unregister devices before d, which holds the pointer to
+	 * the failed device.
+	 */
+	for (delete = sculld_devices; d && delete != d; delete++)
+		unregister_ldd_device(delete);
+	unregister_ldd_driver(&sculld_driver);
+	return err;
 }
 module_init(sculld_init);
 
 static void __exit sculld_exit(void)
 {
+	struct ldd_device *d;
+
 	pr_info("%s\n", __FUNCTION__);
+
 	unregister_ldd_driver(&sculld_driver);
+	for (d = sculld_devices; d->name; d++)
+		unregister_ldd_device(d);
 }
 module_exit(sculld_exit);
 

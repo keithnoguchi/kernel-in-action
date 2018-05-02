@@ -59,9 +59,8 @@ EXPORT_SYMBOL(unregister_ldd_device);
 
 static ssize_t show_version(struct device_driver *drv, char *buf)
 {
-	const struct ldd_driver *ldrv = to_ldd_driver(drv);
-
-	sprintf(buf, "%s\n", ldrv->version);
+	const struct ldd_driver *d = to_ldd_driver(drv);
+	sprintf(buf, "%s\n", d->version);
 	return strlen(buf);
 }
 
@@ -107,6 +106,7 @@ static int __init ldd_init(void)
 	err = device_register(&ldd_bus);
 	if (err)
 		goto unregister;
+	get_device(&ldd_bus); /* hold the static device */
 
 	return 0;
 unregister:
