@@ -367,20 +367,23 @@ air1$
 
 ## Test
 
-It has a kernel's selftest based test cases.
+I'm using the kernel's [kselftest] for [TDD]!  It's as simple as `sudo make run_tests`:
 
-Make sure you load the target module(s):
-
-```sh
-air1$ sudo lsmod | grep scull
-scullp                 20480  0
-scull                  20480  0
-```
-
-then, run `make run_tests` with the root priviledge:
+[selftests]: https://www.kernel.org/doc/Documentation/kselftest.txt
+[TDD]: https://en.wikipedia.org/wiki/Test-driven_development
 
 ```
 air1$ sudo make run_tests
+make -C /lib/modules/4.16.6.3/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.6'
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sculld/sculld.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
+  DEPMOD  4.16.6.3
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
 make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
 TAP version 13
 selftests: ioctl_test
@@ -412,6 +415,15 @@ Pass 8 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
 1..8
 ok 1..2 selftests: select_test [PASS]
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
+make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/sculld/tests'
+TAP version 13
+selftests: sysfs_test
+========================================
+ 1) bus sysfs       : PASS
+Pass 1 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
+1..1
+ok 1..1 selftests: sysfs_test [PASS]
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/sculld/tests'
 air1$
 ```
 

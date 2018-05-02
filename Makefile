@@ -13,15 +13,16 @@ install: modules_install
 modules modules_install help clean:
 	$(MAKE) -C $(KERNDIR) M=$(shell pwd) $@
 load: modules_install
-	for MODULE in $(patsubst %/,%,$(obj-m)); do modprobe $$MODULE; done
+	@for MODULE in $(patsubst %/,%,$(obj-m)); do modprobe $$MODULE; done
 unload:
-	for MODULE in $(patsubst %/,%,$(obj-m)); do rmmod $$MODULE; done
+	-@for MODULE in $(patsubst %/,%,$(obj-m)); do rmmod $$MODULE; done
+reload: unload load
 
 TARGETS = scull
 TARGETS += scullp
 TARGETS += sculld
 run_tests check: kselftest
-kselftest:
+kselftest: reload
 	@for TARGET in $(TARGETS); do                                  \
 		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests            \
 			CFLAGS="-I$(KERNDIR)/tools/testing/selftests" \
