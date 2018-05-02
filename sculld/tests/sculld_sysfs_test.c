@@ -16,7 +16,7 @@ static int sysfs_test(int *i)
 		const char	*want;
 	} tests[] = {
 		{
-			.name      = "/sys/bus/ldd/drivers/sculld/version test",
+			.name      = "/sys/bus/ldd/drivers/sculld/version value",
 			.file_name = "/sys/bus/ldd/drivers/sculld/version",
 			.want      = "1.0",
 		},
@@ -52,6 +52,7 @@ static int sysfs_test(int *i)
 		}
 		if (close(fd)) {
 			perror("close");
+			fd = -1;
 			goto fail;
 		}
 		puts("PASS");
