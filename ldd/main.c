@@ -6,14 +6,7 @@
 #include <linux/device.h>
 #include <linux/string.h>
 
-/* ldd driver */
-struct ldd_driver {
-	const char		*version;
-	struct module		*module;
-	struct device_driver	driver;
-	struct driver_attribute	version_attr;
-};
-#define to_ldd_driver(_drv)	container_of(_drv, struct ldd_driver, driver)
+#include "ldd.h"
 
 static void ldd_bus_release(struct device *d)
 {
