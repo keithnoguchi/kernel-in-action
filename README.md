@@ -367,9 +367,9 @@ air1$
 
 ## Test
 
-I'm using the kernel's [kselftest] for [TDD]!  It's as simple as `sudo make run_tests`:
+`make run_tests` will trigger the kernel's [kselftest] based tests.  Yes, [TDD], even for the kernel modules!
 
-[selftests]: https://www.kernel.org/doc/Documentation/kselftest.txt
+[kselftest]: https://www.kernel.org/doc/Documentation/kselftest.txt
 [TDD]: https://en.wikipedia.org/wiki/Test-driven_development
 
 ```
