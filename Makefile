@@ -4,7 +4,7 @@ obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/
 obj-m += scullp/
-obj-m += sculld/
+obj-m += ldd/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
@@ -20,7 +20,7 @@ reload: unload load
 
 TARGETS = scull
 TARGETS += scullp
-TARGETS += sculld
+TARGETS += ldd
 run_tests check: kselftest
 kselftest: reload
 	@for TARGET in $(TARGETS); do                                  \

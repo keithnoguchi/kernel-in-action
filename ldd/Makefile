@@ -1,5 +1,5 @@
-obj-m += sculld.o
-sculld-objs = main.o
+obj-m += ldd.o
+ldd-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 

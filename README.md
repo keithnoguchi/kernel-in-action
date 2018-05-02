@@ -11,7 +11,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Scull](#scull)
   - [Sleepy](#sleepy)
   - [Scullp](#scullp)
-  - [Sculld](#sculld)
+  - [Ldd](#ldd)
 - [Test](#test)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
@@ -84,14 +84,14 @@ air1$ sudo make load
 make -C /lib/modules/4.16.6.3/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
 make[1]: Entering directory '/home/kei/src/linux-4.16.6'
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ldd/ldd.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sculld/sculld.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
   DEPMOD  4.16.6.3
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
-for MODULE in ps hello scull sleepy scullp sculld; do modprobe $MODULE; done
+for MODULE in ps hello scull sleepy scullp ldd; do modprobe $MODULE; done
 [ 1480.768916] systemd[1]
 [ 1480.769404] kthreadd[2]
 [ 1480.770009] kworker/0:0H[4]
@@ -336,25 +336,25 @@ air1$
 
 As above, you can see the `date` output on the console.
 
-### Sculld
+### Ldd
 
-[sculld] is a registerable scull driver, explained in [LDD chapter 14]:
+[Ldd] is a virtual bus layer for the sculld driver, explained in [LDD chapter 14]:
 
-[sculld]: sculld/main.c
+[ldd]: ldd/main.c
 
 ```sh
 air1$ sudo make install
 make -C /lib/modules/4.16.6.9/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
 make[1]: Entering directory '/home/kei/src/linux-4.16.6'
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ldd/ldd.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sculld/sculld.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
   DEPMOD  4.16.6.9
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
-air1$ sudo modprobe sculld
+air1$ sudo modprobe ldd
 air1$ ls -l /sys/bus/ldd
 total 0
 drwxr-xr-x 2 root root    0 May  1 18:56 devices
