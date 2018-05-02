@@ -77,8 +77,28 @@ air1$
 
 ## Load
 
-You can use `insmod`, or `modprobe` in case you installed those modules
-`sudo make modules_install` as explained in [build](#build) section.
+`sudo make load` will install and load those modules.
+
+```sh
+air1$ sudo make load
+make -C /lib/modules/4.16.6.3/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.6'
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sculld/sculld.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
+  DEPMOD  4.16.6.3
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
+for MODULE in ps hello scull sleepy scullp sculld; do modprobe $MODULE; done
+[ 1480.768916] systemd[1]
+[ 1480.769404] kthreadd[2]
+[ 1480.770009] kworker/0:0H[4]
+[ 1480.770627] kworker/u4:0[5]
+...
+air1$
+```
 
 ### Process status
 
@@ -397,24 +417,33 @@ air1$
 
 ## Unload
 
+`sudo make unload` will unload all the drivers:
+
 ```sh
-air1$ for i in ps hello scull sleepy; do sudo rmmod $i; done
-[ 3527.769278] ps_exit()
-[ 3527.791679] hello_exit
-[ 3527.810600] scull_exit
-[ 3527.811089] scull0[246:0]: deleted
-[ 3527.811661] trim_qset
-[ 3527.812067] scull1[246:1]: deleted
-[ 3527.813049] trim_qset
-[ 3527.813608] scull2[246:2]: deleted
-[ 3527.814160] trim_qset
-[ 3527.816198] scull3[246:3]: deleted
-[ 3527.816850] trim_qset
-[ 3527.837871] sleepy_exit
-[ 3527.838375] sleep0[245:0]: deleted
-[ 3527.842714] sleep1[245:1]: deleted
-[ 3527.843367] sleep2[245:2]: deleted
-[ 3527.843988] sleep3[245:3]: deleted
+air1$ sudo make unload
+for MODULE in ps hello scull sleepy scullp sculld; do rmmod $MODULE; done
+[ 1662.731301] ps_exit()
+[ 1662.740866] hello_exit
+[ 1662.751236] scull_exit
+[ 1662.752461] scull0[247:0]: deleted
+[ 1662.753870] __trim_qset
+[ 1662.754777] scull1[247:1]: deleted
+[ 1662.755887] __trim_qset
+[ 1662.756979] scull2[247:2]: deleted
+[ 1662.758133] __trim_qset
+[ 1662.758993] scull3[247:3]: deleted
+[ 1662.760260] __trim_qset
+[ 1662.774189] sleepy_exit
+[ 1662.775146] sleep0[246:0]: deleted
+[ 1662.776793] sleep1[246:1]: deleted
+[ 1662.778171] sleep2[246:2]: deleted
+[ 1662.779517] sleep3[246:3]: deleted
+[ 1662.794207] scullp: scullp_exit(): exiting
+[ 1662.795160] scullp: scullp_terminate(): deleting scullp0[245:0]
+[ 1662.796574] scullp: scullp_terminate(): deleting scullp1[245:1]
+[ 1662.797903] scullp: scullp_terminate(): deleting scullp2[245:2]
+[ 1662.799456] scullp: scullp_terminate(): deleting scullp3[245:3]
+[ 1662.814432] sculld_exit
 air1$
 ```
 
