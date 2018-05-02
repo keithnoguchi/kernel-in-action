@@ -11,6 +11,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Scull](#scull)
   - [Sleepy](#sleepy)
   - [Scullp](#scullp)
+  - [Sculld](#sculld)
 - [Test](#test)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
@@ -314,6 +315,35 @@ air1$
 ```
 
 As above, you can see the `date` output on the console.
+
+### Sculld
+
+[sculld] is a registerable scull driver:
+
+[sculld]: sculld/main.c
+
+```sh
+air1$ sudo make install
+make -C /lib/modules/4.16.6.9/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.6'
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sculld/sculld.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
+  DEPMOD  4.16.6.9
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
+air1$ sudo modprobe sculld
+air1$ ls -l /sys/bus/ldd
+total 0
+drwxr-xr-x 2 root root    0 May  1 18:56 devices
+drwxr-xr-x 2 root root    0 May  1 18:56 drivers
+-rw-r--r-- 1 root root 4096 May  1 18:56 drivers_autoprobe
+--w------- 1 root root 4096 May  1 18:56 drivers_probe
+--w------- 1 root root 4096 May  1 18:55 uevent
+air1$
+```
 
 ## Test
 
