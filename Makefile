@@ -5,6 +5,7 @@ obj-m += scull/
 obj-m += sleepy/
 obj-m += scullp/
 obj-m += ldd/
+obj-m += sculld/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
@@ -21,16 +22,17 @@ reload: unload load
 TARGETS = scull
 TARGETS += scullp
 TARGETS += ldd
+TARGETS += sculld
 run_tests check: kselftest
 kselftest: reload
-	@for TARGET in $(TARGETS); do                                  \
-		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests            \
+	@for TARGET in $(TARGETS); do                                 \
+		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests           \
 			CFLAGS="-I$(KERNDIR)/tools/testing/selftests" \
 			-C ./$$TARGET/tests/ run_tests;               \
 	done
 kselftest-clean:
-	@for TARGET in $(TARGETS); do                                  \
-		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests            \
+	@for TARGET in $(TARGETS); do                                 \
+		$(MAKE) OUTPUT=$(shell pwd)/$$TARGET/tests           \
 			CFLAGS="-I$(KERNDIR)/tools/testing/selftests" \
 			-C ./$$TARGET/tests/ clean;                   \
 	done
