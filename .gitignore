@@ -4,8 +4,10 @@ Module.symvers
 modules.order
 */*.cmd
 */*.o
+*/*.o.d
 */.*.o
 */*.ko
 */.*.ko.*
 */*.mod.*
 */.*.mod.*
+*/tests/*_test
