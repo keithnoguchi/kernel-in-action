@@ -2,6 +2,7 @@
 
 #include <linux/init.h>
 #include <linux/module.h>
+#include <linux/kernel.h>
 #include <linux/device.h>
 
 static int ldd_match(struct device *dev, struct device_driver *drv)
