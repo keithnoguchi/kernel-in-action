@@ -15,6 +15,7 @@ modules modules_install help clean:
 
 TARGETS = scull
 TARGETS += scullp
+TARGETS += sculld
 run_tests check: kselftest
 kselftest:
 	@for TARGET in $(TARGETS); do                                  \
