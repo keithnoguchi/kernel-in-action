@@ -32,7 +32,7 @@ static int sysfs_test(int *i)
 	for (t = tests; t->name; t++) {
 		int fd;
 
-		printf("%2d) %-16s: ", (*i)++, t->name);
+		printf("%2d) %-70s", (*i)++, t->name);
 		fd = open(t->sysfs_name, t->flags);
 		if (fd == -1) {
 			perror("open");

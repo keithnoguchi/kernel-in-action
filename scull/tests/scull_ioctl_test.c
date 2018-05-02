@@ -10,14 +10,14 @@
 
 #include "../scull.h"
 
-static int test_scull_ioctl_qset(const char *name, const char *scull)
+static int test_scull_ioctl_qset(int *i, const char *name, const char *scull)
 {
 	const char *cmd;
 	int set_qset, get_qset;
 	int err;
 	int fd;
 
-	printf("%s\n", name);
+	printf("%2d) %-70s", (*i)++, name);
 
 	/* open scull device. */
 	fd = open(scull, O_RDONLY);
@@ -91,19 +91,21 @@ out:
 	/* report ioctl() command, in case of error */
 	if (err < 0) {
 		perror(cmd);
+		puts("FAIL");
 		return EXIT_FAILURE;
 	}
+	puts("PASS");
 	return EXIT_SUCCESS;
 }
 
-static int test_scull_ioctl_quantum(const char *name, const char *scull)
+static int test_scull_ioctl_quantum(int *i, const char *name, const char *scull)
 {
 	const char *cmd;
 	int set_quantum, get_quantum;
 	int err;
 	int fd;
 
-	printf("%s\n", name);
+	printf("%2d) %-70s", (*i)++, name);
 
 	/* open scull device. */
 	fd = open(scull, O_RDONLY);
@@ -177,20 +179,24 @@ out:
 	/* report ioctl() command, in case of error */
 	if (err < 0) {
 		perror(cmd);
+		puts("FAIL");
 		return EXIT_FAILURE;
 	}
+	puts("PASS");
 	return EXIT_SUCCESS;
 }
 
 int main(void)
 {
 	int err;
+	int i;
 
-	err = test_scull_ioctl_qset("1. ioctl(SCULL_IOC?QSET)", "/dev/scull1");
+	i = 1;
+	err = test_scull_ioctl_qset(&i, "ioctl(SCULL_IOC?QSET)", "/dev/scull1");
 	if (err)
 		return err;
 
-	err = test_scull_ioctl_quantum("2. ioctl(SCULL_IOC?QUANTUM)", "/dev/scull2");
+	err = test_scull_ioctl_quantum(&i, "ioctl(SCULL_IOC?QUANTUM)", "/dev/scull2");
 	if (err)
 		return err;
 

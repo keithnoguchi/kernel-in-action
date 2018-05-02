@@ -376,54 +376,50 @@ I'm using the kernel's [kselftest] for [TDD]!  It's as simple as `sudo make run_
 air1$ sudo make run_tests
 make -C /lib/modules/4.16.6.3/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
 make[1]: Entering directory '/home/kei/src/linux-4.16.6'
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sculld/sculld.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
   DEPMOD  4.16.6.3
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
 make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
+gcc -I/lib/modules/4.16.6.3/build/tools/testing/selftests    scull_ioctl_test.c  -o /home/kei/src/linux-4.16.6/kernel-in-action/scull/tests/scull_ioctl_test
 TAP version 13
-selftests: ioctl_test
+selftests: scull_ioctl_test
 ========================================
-1. ioctl(SCULL_IOC?QSET)
-2. ioctl(SCULL_IOC?QUANTUM)
-ok 1..1 selftests: ioctl_test [PASS]
+ 1) ioctl(SCULL_IOC?QSET)                                                 PASS
+ 2) ioctl(SCULL_IOC?QUANTUM)                                              PASS
+ok 1..1 selftests: scull_ioctl_test [PASS]
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
 make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
 TAP version 13
-selftests: open_test
+selftests: scullp_open_test
 ========================================
- 1) read only       : PASS
- 2) write only      : PASS
+ 1) read only                                                             PASS
+ 2) write only                                                            PASS
 Pass 2 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
 1..2
-ok 1..1 selftests: open_test [PASS]
-selftests: select_test
+ok 1..1 selftests: scullp_open_test [PASS]
+selftests: scullp_select_test
 ========================================
- 1) write ready on write only fd                    : PASS
- 2) write ready on read-write fd                    : PASS
- 3) write 1 byte on write only fd                   : PASS
- 4) write 1 byte on read-write fd                   : PASS
- 5) write 1024 bytes on write only fd               : PASS
- 6) write 1024 bytes on read-write fd               : PASS
- 7) read 1 byte of data                             : PASS
- 8) read 1024 bytes of data                         : PASS
+ 1) write ready on write only fd                                          PASS
+ 2) write ready on read-write fd                                          PASS
+ 3) write 1 byte on write only fd                                         PASS
+ 4) write 1 byte on read-write fd                                         PASS
+ 5) write 1024 bytes on write only fd                                     PASS
+ 6) write 1024 bytes on read-write fd                                     PASS
+ 7) read 1 byte of data                                                   PASS
+ 8) read 1024 bytes of data                                               PASS
 Pass 8 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
 1..8
-ok 1..2 selftests: select_test [PASS]
+ok 1..2 selftests: scullp_select_test [PASS]
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
-make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/sculld/tests'
+make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/ldd/tests'
 TAP version 13
-selftests: sysfs_test
+selftests: ldd_sysfs_test
 ========================================
- 1) bus sysfs       : PASS
-Pass 1 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
-1..1
-ok 1..1 selftests: sysfs_test [PASS]
-make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/sculld/tests'
+ 1) /sys/bus/ldd/drivers_autoprobe sysfs attribute                        PASS
+ 2) /sys/devices/ldd0/uevent sysfs attribute                              PASS
+Pass 2 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
+1..2
+ok 1..1 selftests: ldd_sysfs_test [PASS]
+make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/ldd/tests'
 air1$
 ```
 

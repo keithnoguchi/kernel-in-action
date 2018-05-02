@@ -35,7 +35,7 @@ static int open_test(int *i)
 	int fd;
 
 	for (t = tests; t->name != NULL; t++) {
-		printf("%2d) %-16s: ", (*i)++, t->name);
+		printf("%2d) %-70s", (*i)++, t->name);
 		fd = open(t->dev_name, t->flags, t->mode);
 		if (fd == -1) {
 			perror("open");

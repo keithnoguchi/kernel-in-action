@@ -86,7 +86,7 @@ static int writer_test(int *i)
 		fd_set fds;
 		int ret;
 
-		printf("%2d) %-48s: ", (*i)++, t->name);
+		printf("%2d) %-70s", (*i)++, t->name);
 
 		/* initialize the file descriptors. */
 		fd = maxfd = -1;
@@ -193,7 +193,7 @@ static int reader_test(int *i)
 		fd_set fds;
 		int ret;
 
-		printf("%2d) %-48s: ", (*i)++, t->name);
+		printf("%2d) %-70s", (*i)++, t->name);
 
 		/* initialize the file descriptors. */
 		fd = maxfd = -1;
