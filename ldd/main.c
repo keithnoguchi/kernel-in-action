@@ -20,13 +20,13 @@ static struct device ldd_bus = {
 
 static int ldd_match(struct device *dev, struct device_driver *drv)
 {
-	pr_info("%s\n", __FUNCTION__);
+	pr_info("%s(%s, %s)\n", __FUNCTION__, dev_name(dev), drv->name);
 	return 0;
 }
 
 static int ldd_uevent(struct device *dev, struct kobj_uevent_env *env)
 {
-	pr_info("%s\n", __FUNCTION__);
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(dev));
 	return 0;
 }
 
@@ -38,7 +38,7 @@ static struct bus_type ldd_bus_type = {
 
 static void ldd_dev_release(struct device *dev)
 {
-	pr_info("%s\n", __FUNCTION__);
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(dev));
 }
 
 int register_ldd_device(struct ldd_device *dev)
