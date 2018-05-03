@@ -20,6 +20,51 @@ static int sysfs_test(int *i)
 			.file_name = "/sys/bus/ldd/drivers/sculld/version",
 			.want      = "1.0",
 		},
+		{
+			.name      = "/sys/bus/ldd/devices/sculld0/uevent value",
+			.file_name = "/sys/bus/ldd/devices/sculld0/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/bus/ldd/devices/sculld1/uevent value",
+			.file_name = "/sys/bus/ldd/devices/sculld1/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/bus/ldd/devices/sculld2/uevent value",
+			.file_name = "/sys/bus/ldd/devices/sculld2/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/bus/ldd/devices/sculld3/uevent value",
+			.file_name = "/sys/bus/ldd/devices/sculld3/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/devices/ldd0/uevent value",
+			.file_name = "/sys/devices/ldd0/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/devices/ldd0/sculld0/uevent value",
+			.file_name = "/sys/devices/ldd0/sculld0/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/devices/ldd0/sculld1/uevent value",
+			.file_name = "/sys/devices/ldd0/sculld1/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/devices/ldd0/sculld2/uevent value",
+			.file_name = "/sys/devices/ldd0/sculld2/uevent",
+			.want      = "",
+		},
+		{
+			.name      = "/sys/devices/ldd0/sculld3/uevent value",
+			.file_name = "/sys/devices/ldd0/sculld3/uevent",
+			.want      = "",
+		},
 		{ /* sentry */ },
 	};
 	const struct test *t;
@@ -43,7 +88,10 @@ static int sysfs_test(int *i)
 			perror("read");
 			goto fail;
 		}
-		buf[err-1] = '\0'; /* -1: strip new line */
+		if (err == 0)
+			buf[0] = '\0';
+		else
+			buf[err-1] = '\0'; /* -1: strip new line */
 
 		got = buf;
 		if (strcmp(got, t->want)) {
