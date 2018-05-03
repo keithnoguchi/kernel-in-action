@@ -426,20 +426,27 @@ air1$
 
 ```
 air1$ sudo make run_tests
-make -C /lib/modules/4.16.6.3/build M=/home/kei/src/linux-4.16.6/kernel-in-action modules_install
-make[1]: Entering directory '/home/kei/src/linux-4.16.6'
-  DEPMOD  4.16.6.3
-make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
-make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
-gcc -I/lib/modules/4.16.6.3/build/tools/testing/selftests    scull_ioctl_test.c  -o /home/kei/src/linux-4.16.6/kernel-in-action/scull/tests/scull_ioctl_test
+modprobe: FATAL: Module ldd is in use.
+make -C /lib/modules/4.16.7.1/build M=/home/kei/src/linux-4.16.7/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.7'
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ldd/ldd.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/sculld/sculld.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/sleepy/sleepy.ko
+  DEPMOD  4.16.7.1
+make[1]: Leaving directory '/home/kei/src/linux-4.16.7'
+make[1]: Entering directory '/home/kei/src/linux-4.16.7/kernel-in-action/scull/tests'
 TAP version 13
 selftests: scull_ioctl_test
 ========================================
  1) ioctl(SCULL_IOC?QSET)                                                 PASS
  2) ioctl(SCULL_IOC?QUANTUM)                                              PASS
 ok 1..1 selftests: scull_ioctl_test [PASS]
-make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scull/tests'
-make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
+make[1]: Leaving directory '/home/kei/src/linux-4.16.7/kernel-in-action/scull/tests'
+make[1]: Entering directory '/home/kei/src/linux-4.16.7/kernel-in-action/scullp/tests'
 TAP version 13
 selftests: scullp_open_test
 ========================================
@@ -461,8 +468,8 @@ selftests: scullp_select_test
 Pass 8 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
 1..8
 ok 1..2 selftests: scullp_select_test [PASS]
-make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/scullp/tests'
-make[1]: Entering directory '/home/kei/src/linux-4.16.6/kernel-in-action/ldd/tests'
+make[1]: Leaving directory '/home/kei/src/linux-4.16.7/kernel-in-action/scullp/tests'
+make[1]: Entering directory '/home/kei/src/linux-4.16.7/kernel-in-action/ldd/tests'
 TAP version 13
 selftests: ldd_sysfs_test
 ========================================
@@ -471,7 +478,28 @@ selftests: ldd_sysfs_test
 Pass 2 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
 1..2
 ok 1..1 selftests: ldd_sysfs_test [PASS]
-make[1]: Leaving directory '/home/kei/src/linux-4.16.6/kernel-in-action/ldd/tests'
+make[1]: Leaving directory '/home/kei/src/linux-4.16.7/kernel-in-action/ldd/tests'
+make[1]: Entering directory '/home/kei/src/linux-4.16.7/kernel-in-action/sculld/tests'
+TAP version 13
+selftests: sculld_sysfs_test
+========================================
+ 1) /sys/bus/ldd/drivers/sculld/version value                             PASS
+ 2) /sys/bus/ldd/drivers/sculld/sculld0/uevent value                      PASS
+ 3) /sys/bus/ldd/drivers/sculld/sculld1/uevent value                      PASS
+ 4) /sys/bus/ldd/drivers/sculld/sculld2/uevent value                      PASS
+ 5) /sys/bus/ldd/drivers/sculld/sculld3/uevent value                      PASS
+ 6) /sys/bus/ldd/devices/sculld0/uevent value                             PASS
+ 7) /sys/bus/ldd/devices/sculld1/uevent value                             PASS
+ 8) /sys/bus/ldd/devices/sculld2/uevent value                             PASS
+ 9) /sys/bus/ldd/devices/sculld3/uevent value                             PASS
+10) /sys/devices/ldd0/sculld0/uevent value                                PASS
+11) /sys/devices/ldd0/sculld1/uevent value                                PASS
+12) /sys/devices/ldd0/sculld2/uevent value                                PASS
+13) /sys/devices/ldd0/sculld3/uevent value                                PASS
+Pass 1 Fail 0 Xfail 0 Xpass 0 Skip 0 Error 0
+1..1
+ok 1..1 selftests: sculld_sysfs_test [PASS]
+make[1]: Leaving directory '/home/kei/src/linux-4.16.7/kernel-in-action/sculld/tests'
 air1$
 ```
 

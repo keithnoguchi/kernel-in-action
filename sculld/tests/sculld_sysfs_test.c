@@ -61,11 +61,6 @@ static int sysfs_test(int *i)
 			.want      = "DRIVER=sculld",
 		},
 		{
-			.name      = "/sys/devices/ldd0/uevent value",
-			.file_name = "/sys/devices/ldd0/uevent",
-			.want      = "",
-		},
-		{
 			.name      = "/sys/devices/ldd0/sculld0/uevent value",
 			.file_name = "/sys/devices/ldd0/sculld0/uevent",
 			.want      = "DRIVER=sculld",
