@@ -21,24 +21,44 @@ static int sysfs_test(int *i)
 			.want      = "1.0",
 		},
 		{
+			.name      = "/sys/bus/ldd/drivers/sculld/sculld0/uevent value",
+			.file_name = "/sys/bus/ldd/drivers/sculld/sculld0/uevent",
+			.want      = "DRIVER=sculld",
+		},
+		{
+			.name      = "/sys/bus/ldd/drivers/sculld/sculld1/uevent value",
+			.file_name = "/sys/bus/ldd/drivers/sculld/sculld1/uevent",
+			.want      = "DRIVER=sculld",
+		},
+		{
+			.name      = "/sys/bus/ldd/drivers/sculld/sculld2/uevent value",
+			.file_name = "/sys/bus/ldd/drivers/sculld/sculld2/uevent",
+			.want      = "DRIVER=sculld",
+		},
+		{
+			.name      = "/sys/bus/ldd/drivers/sculld/sculld3/uevent value",
+			.file_name = "/sys/bus/ldd/drivers/sculld/sculld3/uevent",
+			.want      = "DRIVER=sculld",
+		},
+		{
 			.name      = "/sys/bus/ldd/devices/sculld0/uevent value",
 			.file_name = "/sys/bus/ldd/devices/sculld0/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/bus/ldd/devices/sculld1/uevent value",
 			.file_name = "/sys/bus/ldd/devices/sculld1/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/bus/ldd/devices/sculld2/uevent value",
 			.file_name = "/sys/bus/ldd/devices/sculld2/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/bus/ldd/devices/sculld3/uevent value",
 			.file_name = "/sys/bus/ldd/devices/sculld3/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/devices/ldd0/uevent value",
@@ -48,22 +68,22 @@ static int sysfs_test(int *i)
 		{
 			.name      = "/sys/devices/ldd0/sculld0/uevent value",
 			.file_name = "/sys/devices/ldd0/sculld0/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/devices/ldd0/sculld1/uevent value",
 			.file_name = "/sys/devices/ldd0/sculld1/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/devices/ldd0/sculld2/uevent value",
 			.file_name = "/sys/devices/ldd0/sculld2/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{
 			.name      = "/sys/devices/ldd0/sculld3/uevent value",
 			.file_name = "/sys/devices/ldd0/sculld3/uevent",
-			.want      = "",
+			.want      = "DRIVER=sculld",
 		},
 		{ /* sentry */ },
 	};
@@ -95,7 +115,7 @@ static int sysfs_test(int *i)
 
 		got = buf;
 		if (strcmp(got, t->want)) {
-			printf("FAIL, want=%s, got=%s\n", t->want, got);
+			printf("FAIL, want='%s', got='%s'\n", t->want, got);
 			goto fail;
 		}
 		if (close(fd)) {

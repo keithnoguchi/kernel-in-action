@@ -386,14 +386,34 @@ make[1]: Entering directory '/home/kei/src/linux-4.16.7'
   DEPMOD  4.16.7.1
 make[1]: Leaving directory '/home/kei/src/linux-4.16.7'
 air1$ sudo modprobe sculld
-air1$ ls -l /sys/bus/ldd/drivers/sculld/
-total 0
---w------- 1 root root 4096 May  2 11:05 bind
---w------- 1 root root 4096 May  2 11:05 uevent
---w------- 1 root root 4096 May  2 11:05 unbind
--r--r--r-- 1 root root 4096 May  2 11:05 version
-air1$ cat /sys/bus/ldd/drivers/sculld/version
-1.0
+```
+
+And [sculld] drivers matches to those `sculld[0-3]` devices under
+[ldd] bus:
+
+```sh
+air1$ tree /sys/bus/ldd
+/sys/bus/ldd
+|-- devices
+|   |-- sculld0 -> ../../../devices/ldd0/sculld0
+|   |-- sculld1 -> ../../../devices/ldd0/sculld1
+|   |-- sculld2 -> ../../../devices/ldd0/sculld2
+|   `-- sculld3 -> ../../../devices/ldd0/sculld3
+|-- drivers
+|   `-- sculld
+|       |-- bind
+|       |-- sculld0 -> ../../../../devices/ldd0/sculld0
+|       |-- sculld1 -> ../../../../devices/ldd0/sculld1
+|       |-- sculld2 -> ../../../../devices/ldd0/sculld2
+|       |-- sculld3 -> ../../../../devices/ldd0/sculld3
+|       |-- uevent
+|       |-- unbind
+|       `-- version
+|-- drivers_autoprobe
+|-- drivers_probe
+`-- uevent
+
+11 directories, 7 files
 air1$
 ```
 

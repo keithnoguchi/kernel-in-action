@@ -10,7 +10,7 @@
 
 static void ldd_bus_release(struct device *d)
 {
-	pr_info("%s\n", __FUNCTION__);
+	pr_info("%s(%s)\n", __FUNCTION__, dev_name(d));
 }
 
 static struct device ldd_bus = {
@@ -20,8 +20,10 @@ static struct device ldd_bus = {
 
 static int ldd_match(struct device *dev, struct device_driver *drv)
 {
-	pr_info("%s(%s, %s)\n", __FUNCTION__, dev_name(dev), drv->name);
-	return 0;
+	pr_info("%s(device[%s], driver[%s])\n", __FUNCTION__,
+		dev_name(dev), drv->name);
+	/* use driver name as a prefix of the devices to be managed */
+	return !strncmp(dev_name(dev), drv->name, strlen(drv->name));
 }
 
 static int ldd_uevent(struct device *dev, struct kobj_uevent_env *env)
