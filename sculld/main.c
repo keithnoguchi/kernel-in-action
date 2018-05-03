@@ -49,7 +49,6 @@ static int __init sculld_init(void)
 		err = register_ldd_device(d);
 		if (err)
 			goto unregister;
-		get_device(&d->dev); /* hold the static device */
 	}
 	return 0;
 unregister:

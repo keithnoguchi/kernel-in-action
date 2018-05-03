@@ -106,7 +106,6 @@ static int __init ldd_init(void)
 	err = device_register(&ldd_bus);
 	if (err)
 		goto unregister;
-	get_device(&ldd_bus); /* hold the static device */
 
 	return 0;
 unregister:
