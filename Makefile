@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
-obj-m += ps/
+obj-m += ls/
 obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/

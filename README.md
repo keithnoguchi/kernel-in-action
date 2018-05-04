@@ -6,7 +6,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
 
 - [Build](#build)
 - [Load](#load)
-  - [Process status](#process-status)
+  - [List processes](#listing-processes)
   - [Hello world](#hello-world)
   - [Scull](#scull)
   - [Sleepy](#sleepy)
@@ -32,8 +32,8 @@ make -C /lib/modules/4.16.5.d/build M=/home/kei/src/linux-4.16.5/kernel-in-actio
 make[1]: Entering directory '/home/kei/src/linux-4.16.5'
   CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/hello/main.o
   LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.o
-  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ps/main.o
-  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.o
+  CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ls/main.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ls/ls.o
   CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scull/main.o
   LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.o
   CC [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scullp/main.o
@@ -44,8 +44,8 @@ make[1]: Entering directory '/home/kei/src/linux-4.16.5'
   MODPOST 5 modules
   CC      /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.mod.o
   LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.ko
-  CC      /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.mod.o
-  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.ko
+  CC      /home/kei/src/linux-4.16.5/kernel-in-action/ls/ls.mod.o
+  LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/ls/ls.ko
   CC      /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.mod.o
   LD [M]  /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.ko
   CC      /home/kei/src/linux-4.16.5/kernel-in-action/scullp/scullp.mod.o
@@ -67,7 +67,7 @@ air1$ sudo make modules_install
 make -C /lib/modules/4.16.5.d/build M=/home/kei/src/linux-4.16.5/kernel-in-action modules_install
 make[1]: Entering directory '/home/kei/src/linux-4.16.5'
   INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/hello/hello.ko
-  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/ls/ls.ko
   INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/scull/scull.ko
   INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/scullp/scullp.ko
   INSTALL /home/kei/src/linux-4.16.5/kernel-in-action/sleepy/sleepy.ko
@@ -86,13 +86,13 @@ make -C /lib/modules/4.16.6.3/build M=/home/kei/src/linux-4.16.6/kernel-in-actio
 make[1]: Entering directory '/home/kei/src/linux-4.16.6'
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ldd/ldd.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ls/ls.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
   DEPMOD  4.16.6.3
 make[1]: Leaving directory '/home/kei/src/linux-4.16.6'
-for MODULE in ps hello scull sleepy scullp ldd; do modprobe $MODULE; done
+for MODULE in ls hello scull sleepy scullp ldd; do modprobe $MODULE; done
 [ 1480.768916] systemd[1]
 [ 1480.769404] kthreadd[2]
 [ 1480.770009] kworker/0:0H[4]
@@ -103,12 +103,12 @@ air1$
 
 ### Process status
 
-[ps.ko] module is a classic ps command inside kernel:
+[ls.ko] module is a classic ls command, but implemented as a kernel module :)
 
-[ps.ko]: ps/main.c
+[ls.ko]: ls/main.c
 
 ```sh
-air1$ sudo modprobe ps
+air1$ sudo modprobe ls
 [ 3467.251298] systemd[1]
 [ 3467.252030] kthreadd[2]
 [ 3467.252509] kworker/0:0H[4]
@@ -236,7 +236,7 @@ total 28
 -rw-r--r-- 1 kei wheel 4327 Apr 25 21:18 README.md
 drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 hello
 -rw-r--r-- 1 kei wheel  187 Apr 25 21:06 modules.order
-drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 ps
+drwxr-xr-x 2 kei wheel 4096 Apr 25 20:44 ls
 drwxr-xr-x 2 kei wheel 4096 Apr 25 21:06 scull
 [ 2497.287428] scull_read
 [ 2497.288004] scull_release
@@ -349,7 +349,7 @@ make -C /lib/modules/4.16.6.9/build M=/home/kei/src/linux-4.16.6/kernel-in-actio
 make[1]: Entering directory '/home/kei/src/linux-4.16.6'
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/hello/hello.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ldd/ldd.ko
-  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/ls/ls.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scull/scull.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/scullp/scullp.ko
   INSTALL /home/kei/src/linux-4.16.6/kernel-in-action/sleepy/sleepy.ko
@@ -378,7 +378,7 @@ make -C /lib/modules/4.16.7.1/build M=/home/kei/src/linux-4.16.7/kernel-in-actio
 make[1]: Entering directory '/home/kei/src/linux-4.16.7'
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/hello/hello.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ldd/ldd.ko
-  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ls/ls.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scull/scull.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/sculld/sculld.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scullp/scullp.ko
@@ -431,7 +431,7 @@ make -C /lib/modules/4.16.7.1/build M=/home/kei/src/linux-4.16.7/kernel-in-actio
 make[1]: Entering directory '/home/kei/src/linux-4.16.7'
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/hello/hello.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ldd/ldd.ko
-  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ps/ps.ko
+  INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/ls/ls.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scull/scull.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/sculld/sculld.ko
   INSTALL /home/kei/src/linux-4.16.7/kernel-in-action/scullp/scullp.ko
@@ -509,8 +509,8 @@ air1$
 
 ```sh
 air1$ sudo make unload
-for MODULE in ps hello scull sleepy scullp sculld; do rmmod $MODULE; done
-[ 1662.731301] ps_exit()
+for MODULE in ls hello scull sleepy scullp sculld; do rmmod $MODULE; done
+[ 1662.731301] ls_exit()
 [ 1662.740866] hello_exit
 [ 1662.751236] scull_exit
 [ 1662.752461] scull0[247:0]: deleted
@@ -546,7 +546,7 @@ make[1]: Entering directory '/home/kei/src/linux-4.16.2'
   CLEAN   /home/kei/git/kernel-in-action/.tmp_versions
   CLEAN   /home/kei/git/kernel-in-action/Module.symvers
 make[1]: Leaving directory '/home/kei/src/linux-4.16.2'
-air1$ ls -l ./ps/
+air1$ ls -l ./ls/
 total 8
 -rw-r--r-- 1 kei wheel 204 Apr 23 15:28 Makefile
 -rw-r--r-- 1 kei wheel   0 Apr 23 15:29 Module.symvers

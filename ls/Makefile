@@ -1,5 +1,5 @@
-obj-m += ps.o
-ps-objs = main.o
+obj-m += ls.o
+ls-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 

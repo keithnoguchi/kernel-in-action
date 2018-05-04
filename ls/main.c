@@ -7,7 +7,7 @@
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
 
-static int __init ps_init(void)
+static int __init ls_init(void)
 {
 	struct task_struct *t;
 
@@ -17,13 +17,13 @@ static int __init ps_init(void)
 
 	return 0;
 }
-module_init(ps_init);
+module_init(ls_init);
 
-static void __exit ps_exit(void)
+static void __exit ls_exit(void)
 {
 	pr_info("%s()\n", __FUNCTION__);
 }
-module_exit(ps_exit);
+module_exit(ls_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
