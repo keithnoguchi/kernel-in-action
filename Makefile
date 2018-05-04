@@ -6,6 +6,7 @@ obj-m += sleepy/
 obj-m += scullp/
 obj-m += ldd/
 obj-m += sculld/
+obj-m += jit/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
@@ -25,6 +26,7 @@ TARGETS = scull
 TARGETS += scullp
 TARGETS += ldd
 TARGETS += sculld
+TARGETS += jit
 
 .PHONY: run_tests check kselftest kselftest-clean
 run_tests check: kselftest
