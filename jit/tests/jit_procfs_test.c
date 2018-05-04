@@ -12,9 +12,8 @@ static int procfs_test(int *i)
 
 int main(void)
 {
-	int i;
+	int i = 1;
 
-	i = 1;
 	if (procfs_test(&i))
 		ksft_exit_fail();
 	ksft_exit_pass();
