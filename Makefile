@@ -24,6 +24,7 @@ reload: load
 
 TARGETS = scull
 TARGETS += scullp
+TARGETS += sleepy
 TARGETS += ldd
 TARGETS += sculld
 TARGETS += jit
