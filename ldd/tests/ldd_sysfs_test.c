@@ -54,9 +54,15 @@ fail:
 
 int main(void)
 {
+	int fail = 0;
 	int i = 1;
 
 	if (sysfs_test(&i))
+		fail++;
+
+	puts("");
+	if (fail)
 		ksft_exit_fail();
-	ksft_exit_pass();
+	else
+		ksft_exit_pass();
 }

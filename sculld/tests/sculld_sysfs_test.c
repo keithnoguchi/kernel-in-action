@@ -118,9 +118,9 @@ static int sysfs_test(int *i)
 			fd = -1;
 			goto fail;
 		}
+		ksft_inc_pass_cnt();
 		puts("PASS");
 	}
-	ksft_inc_pass_cnt();
 	return 0;
 fail:
 	puts("FAIL");
@@ -132,10 +132,15 @@ fail:
 
 int main(void)
 {
-	int i;
+	int fail = 0;
+	int i = 1;
 
-	i = 1;
 	if (sysfs_test(&i))
+		fail++;
+
+	puts("");
+	if (fail)
 		ksft_exit_fail();
-	ksft_exit_pass();
+	else
+		ksft_exit_pass();
 }

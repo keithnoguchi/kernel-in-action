@@ -265,12 +265,17 @@ fail:
 
 int main(void)
 {
+	int fail = 0;
 	int i = 1;
 
 	if (writer_test(&i))
-		ksft_exit_fail();
+		fail++;
 	if (reader_test(&i))
-		ksft_exit_fail();
+		fail++;
 
-	ksft_exit_pass();
+	puts("");
+	if (fail)
+		ksft_exit_fail();
+	else
+		ksft_exit_pass();
 }

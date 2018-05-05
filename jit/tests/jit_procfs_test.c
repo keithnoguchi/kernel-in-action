@@ -8,7 +8,7 @@
 
 #include "kselftest.h"
 
-static int procfs_test(int *i)
+static int procfs_open_test(int *i)
 {
 	const struct test {
 		const char	*name;
@@ -56,9 +56,15 @@ fail:
 
 int main(void)
 {
+	int fail = 0;
 	int i = 1;
 
-	if (procfs_test(&i))
+	if (procfs_open_test(&i))
+		fail++;
+
+	puts("");
+	if (fail)
 		ksft_exit_fail();
-	ksft_exit_pass();
+	else
+		ksft_exit_pass();
 }

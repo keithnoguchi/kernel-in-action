@@ -10,6 +10,8 @@
 
 #include "../scull.h"
 
+#include "kselftest.h"
+
 static int test_scull_ioctl_qset(int *i, const char *name, const char *scull)
 {
 	const char *cmd;
@@ -188,17 +190,18 @@ out:
 
 int main(void)
 {
-	int err;
-	int i;
+	int fail = 0;
+	int i = 1;
 
-	i = 1;
-	err = test_scull_ioctl_qset(&i, "ioctl(SCULL_IOC?QSET)", "/dev/scull1");
-	if (err)
-		return err;
+	if (test_scull_ioctl_qset(&i, "ioctl(SCULL_IOC?QSET)", "/dev/scull1"))
+		fail++;
 
-	err = test_scull_ioctl_quantum(&i, "ioctl(SCULL_IOC?QUANTUM)", "/dev/scull2");
-	if (err)
-		return err;
+	if (test_scull_ioctl_quantum(&i, "ioctl(SCULL_IOC?QUANTUM)", "/dev/scull2"))
+		fail++;
 
-	return err;
+	puts("");
+	if (fail)
+		ksft_exit_fail();
+	else
+		ksft_exit_pass();
 }
