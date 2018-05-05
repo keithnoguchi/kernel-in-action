@@ -7,45 +7,46 @@
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/jiffies.h>
+#include <linux/time.h>
 
-enum jit_procfs_ct_type {
-	JIT_PROCFS_CT_NONE = 0,
-	JIT_PROCFS_CT_JIFFIES,
-	JIT_PROCFS_CT_JIFFIES64,
-	JIT_PROCFS_CT_DO_GETTIMEOFDAY,
-	JIT_PROCFS_CT_CURRENT_KERNEL_TIME,
-	JIT_PROCFS_CT_MAX,
-};
+#define NR_CURRENTTIME	10
+static int nr_currenttime = NR_CURRENTTIME;
 
 static void *jit_procfs_ct_seq_start(struct seq_file *s, loff_t *pos)
 {
-	pr_info("%s\n", __FUNCTION__);
-	*pos = JIT_PROCFS_CT_JIFFIES;
-	return (void *)JIT_PROCFS_CT_JIFFIES;
+	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
+	if (*pos >= nr_currenttime)
+		return NULL;
+	seq_printf(s, "jiffies\t\tjiffies_64\t\tdo_gettimeofday()\tcurrent_kernel_time()\n");
+	return (void *)&nr_currenttime;
 }
 
 static void *jit_procfs_ct_seq_next(struct seq_file *s, void *v, loff_t *pos)
 {
-	enum jit_procfs_ct_type type = (enum jit_procfs_ct_type)v;
-	if ((*pos) == JIT_PROCFS_CT_MAX)
+	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
+	(*pos)++;
+	if (*pos >= nr_currenttime)
 		return NULL;
-	type++; (*pos)++;
-	pr_info("%s(%d)\n", __FUNCTION__, type);
-	return (void *)type;
+	return (void *)s;
 }
 
 static void jit_procfs_ct_seq_stop(struct seq_file *s, void *v)
 {
-	enum jit_procfs_ct_type type = (enum jit_procfs_ct_type)v;
-	pr_info("%s(%d)\n", __FUNCTION__, type);
+	pr_info("%s\n", __FUNCTION__);
 	return;
 }
 
 static int jit_procfs_ct_seq_show(struct seq_file *s, void *v)
 {
-	enum jit_procfs_ct_type type = (enum jit_procfs_ct_type)v;
-	pr_info("%s(%d)\n", __FUNCTION__, type);
-	seq_printf(s, "JIT currenttime type: %d\n", type);
+	struct timeval tv;
+	struct timespec ts;
+
+	pr_info("%s\n", __FUNCTION__);
+	do_gettimeofday(&tv);
+	ts = current_kernel_time();
+	seq_printf(s, "0x%08lx\t0x%016llx\t%ld.%ld\t%ld.%ld\n", jiffies, get_jiffies_64(),
+		   tv.tv_sec, tv.tv_usec, ts.tv_sec, ts.tv_nsec);
 	return 0;
 }
 
