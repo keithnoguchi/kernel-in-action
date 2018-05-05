@@ -23,6 +23,7 @@ static int procfs_test(int *i)
 		{ /* sentory */ },
 	};
 	const struct test *t;
+	int fail = 0;
 
 	for (t = tests; t->name; t++) {
 		printf("%2d) %-70s", (*i)++, t->name);
@@ -39,12 +40,17 @@ static int procfs_test(int *i)
 			goto fail;
 		}
 		ksft_inc_pass_cnt();
+		puts("PASS");
 		continue;
 fail:
 		ksft_inc_fail_cnt();
+		puts("FAIL");
 		if (fd != -1)
 			close(fd);
+		fail++;
 	}
+	if (fail)
+		return 1;
 	return 0;
 }
 

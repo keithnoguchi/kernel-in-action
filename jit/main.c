@@ -10,23 +10,22 @@
 #include <linux/jiffies.h>
 #include <linux/time.h>
 
-#define NR_CURRENTTIME	10
-static int nr_currenttime = NR_CURRENTTIME;
+#define MAX_NR_CURRENTTIME	512
 
 static void *jit_procfs_ct_seq_start(struct seq_file *s, loff_t *pos)
 {
 	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
-	if (*pos >= nr_currenttime)
+	if (*pos >= MAX_NR_CURRENTTIME)
 		return NULL;
 	seq_printf(s, "jiffies\t\tjiffies_64\t\tdo_gettimeofday()\tcurrent_kernel_time()\n");
-	return (void *)&nr_currenttime;
+	return (void *)!NULL; /* just a dummy */
 }
 
 static void *jit_procfs_ct_seq_next(struct seq_file *s, void *v, loff_t *pos)
 {
 	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
 	(*pos)++;
-	if (*pos >= nr_currenttime)
+	if (*pos >= MAX_NR_CURRENTTIME)
 		return NULL;
 	return (void *)s;
 }
@@ -47,14 +46,15 @@ static int jit_procfs_ct_seq_show(struct seq_file *s, void *v)
 	ts = current_kernel_time();
 	seq_printf(s, "0x%08lx\t0x%016llx\t%ld.%ld\t%ld.%ld\n", jiffies, get_jiffies_64(),
 		   tv.tv_sec, tv.tv_usec, ts.tv_sec, ts.tv_nsec);
+
 	return 0;
 }
 
 const static struct seq_operations jit_procfs_ct_seq_ops = {
 	.start = jit_procfs_ct_seq_start,
-	.next = jit_procfs_ct_seq_next,
-	.stop = jit_procfs_ct_seq_stop,
-	.show = jit_procfs_ct_seq_show,
+	.next  = jit_procfs_ct_seq_next,
+	.stop  = jit_procfs_ct_seq_stop,
+	.show  = jit_procfs_ct_seq_show,
 };
 
 static int jit_procfs_ct_open(struct inode *i, struct file *f)
@@ -64,10 +64,10 @@ static int jit_procfs_ct_open(struct inode *i, struct file *f)
 }
 
 const static struct file_operations jit_procfs_ct_ops = {
-	.owner = THIS_MODULE,
-	.open = jit_procfs_ct_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
+	.owner   = THIS_MODULE,
+	.open    = jit_procfs_ct_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
 	.release = seq_release,
 };
 
