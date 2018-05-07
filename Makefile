@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 obj-m += ls/
+obj-m += lspci/
 obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/
@@ -28,6 +29,7 @@ TARGETS += sleepy
 TARGETS += ldd
 TARGETS += sculld
 TARGETS += currenttime
+TARGETS += lspci
 
 .PHONY: run_tests check kselftest kselftest-clean
 run_tests check: kselftest
