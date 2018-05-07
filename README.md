@@ -13,6 +13,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Scullp](#scullp)
   - [Ldd](#ldd)
   - [Sculld](#sculld)
+  - [/proc/currenttime](#currenttime)
 - [Test](#test)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
@@ -203,7 +204,7 @@ air1$ sudo rmmod hello
 
 ### Scull
 
-[scull.ko] is a [LDD]'s simple character device, explained in [LDD chapter 3].
+[scull.ko] is a [LDD]'s simple character device, explained in [LDD Chapter 3].
 
 [scull.ko]: scull/main.c
 
@@ -246,7 +247,7 @@ air1$
 ### Sleepy
 
 [sleepy.ko] is a simple module to demonstrate the wait queue, as explained
-in [LDD chapter 5].
+in [LDD Chapter 5].
 
 [sleepy.ko]: sleepy/main.c
 
@@ -294,7 +295,7 @@ the sleepy_write() method call.
 
 [scullp.ko] is a pipe version of the scull, which blocks both in read/write
 while there is no enough data to read or enough space to write, as explained
-in [LDD chapter 5].  This is a great example to show case kernel's
+in [LDD Chapter 5].  This is a great example to show case kernel's
 [wait queue].
 
 [scullp.ko]: scullp/main.c
@@ -339,7 +340,7 @@ As above, you can see the `date` output on the console.
 
 ### Ldd
 
-[Ldd] is a virtual bus layer for the [sculld] driver, explained in [LDD chapter 14]:
+[Ldd] is a virtual bus layer for the [sculld] driver, explained in [LDD Chapter 14]:
 
 [ldd]: ldd/main.c
 
@@ -368,7 +369,7 @@ air1$
 
 ### Sculld
 
-[sculld] is a scull driver under [ldd] virtual bus, explained in [LDD chapter 14]:
+[sculld] is a scull driver under [ldd] virtual bus, explained in [LDD Chapter 14]:
 
 [sculld]: sculld/main.c
 
@@ -415,6 +416,24 @@ air1$ tree /sys/bus/ldd
 
 11 directories, 7 files
 air1$
+```
+
+### currenttime
+
+[currenttime] is a module to dump the kernel internal variables, `jiffies`,
+`jiffies_64`, etc, through the `/proc/currenttime`, as demonstrated in
+[LDD Chapter 7]:
+
+[currenttime]: currenttime/main.c
+
+```sh
+arch01$ head -5  /proc/currenttime
+jiffies         jiffies_64              do_gettimeofday()       current_kernel_time()
+0x1000838ea     0x00000001000838ea      1525717421.454863       1525717421.449790319
+0x1000838eb     0x00000001000838eb      1525717421.457137       1525717421.453123652
+0x1000838eb     0x00000001000838eb      1525717421.459434       1525717421.453123652
+0x1000838ec     0x00000001000838ec      1525717421.461756       1525717421.456456986
+arch01$
 ```
 
 ## Test
@@ -561,9 +580,10 @@ total 8
 
 [LKD]: https://www.amazon.com/Linux-Kernel-Development-Robert-Love/dp/0672329468/ref=as_li_ss_tl?ie=UTF8&tag=roblov-20
 [LDD]: https://lwn.net/Kernel/LDD3/
-[LDD chapter 3]:  https://lwn.net/images/pdf/LDD3/ch03.pdf
-[LDD chapter 5]:  https://lwn.net/images/pdf/LDD3/ch05.pdf
-[LDD chapter 14]: https://lwn.net/images/pdf/LDD3/ch14.pdf
+[LDD Chapter 3]:  https://lwn.net/images/pdf/LDD3/ch03.pdf
+[LDD Chapter 5]:  https://lwn.net/images/pdf/LDD3/ch05.pdf
+[LDD Chapter 7]:  https://lwn.net/images/pdf/LDD3/ch07.pdf
+[LDD Chapter 14]: https://lwn.net/images/pdf/LDD3/ch14.pdf
 [Robert Love]: https://rlove.org/
 [Jonathan Corbet]: http://www.oreilly.com/pub/au/592
 [Alessandro Rubini]: http://www.linux.it/~rubini/
