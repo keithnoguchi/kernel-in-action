@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
-obj-m += jit.o
-jit-objs = main.o
+obj-m += currenttime.o
+currenttime-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 

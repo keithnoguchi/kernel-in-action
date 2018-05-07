@@ -12,31 +12,31 @@
 
 #define MAX_NR_CURRENTTIME	512
 
-static void *jit_procfs_ct_seq_start(struct seq_file *s, loff_t *pos)
+static void *currenttime_procfs_ct_seq_start(struct seq_file *s, loff_t *pos)
 {
 	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
 	if (*pos >= MAX_NR_CURRENTTIME)
 		return NULL;
 	seq_printf(s, "jiffies\t\tjiffies_64\t\tdo_gettimeofday()\tcurrent_kernel_time()\n");
-	return (void *)!NULL; /* just a dummy */
+	return (void *)!NULL; /* we don't use void *v */
 }
 
-static void *jit_procfs_ct_seq_next(struct seq_file *s, void *v, loff_t *pos)
+static void *currenttime_procfs_ct_seq_next(struct seq_file *s, void *v, loff_t *pos)
 {
 	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
 	(*pos)++;
 	if (*pos >= MAX_NR_CURRENTTIME)
 		return NULL;
-	return (void *)s;
+	return v; /* just returns a dummy */
 }
 
-static void jit_procfs_ct_seq_stop(struct seq_file *s, void *v)
+static void currenttime_procfs_ct_seq_stop(struct seq_file *s, void *v)
 {
 	pr_info("%s\n", __FUNCTION__);
 	return;
 }
 
-static int jit_procfs_ct_seq_show(struct seq_file *s, void *v)
+static int currenttime_procfs_ct_seq_show(struct seq_file *s, void *v)
 {
 	struct timeval tv;
 	struct timespec ts;
@@ -50,64 +50,64 @@ static int jit_procfs_ct_seq_show(struct seq_file *s, void *v)
 	return 0;
 }
 
-const static struct seq_operations jit_procfs_ct_seq_ops = {
-	.start = jit_procfs_ct_seq_start,
-	.next  = jit_procfs_ct_seq_next,
-	.stop  = jit_procfs_ct_seq_stop,
-	.show  = jit_procfs_ct_seq_show,
+const static struct seq_operations currenttime_procfs_ct_seq_ops = {
+	.start = currenttime_procfs_ct_seq_start,
+	.next  = currenttime_procfs_ct_seq_next,
+	.stop  = currenttime_procfs_ct_seq_stop,
+	.show  = currenttime_procfs_ct_seq_show,
 };
 
-static int jit_procfs_ct_open(struct inode *i, struct file *f)
+static int currenttime_procfs_ct_open(struct inode *i, struct file *f)
 {
 	pr_info("%s\n", __FUNCTION__);
-	return seq_open(f, &jit_procfs_ct_seq_ops);
+	return seq_open(f, &currenttime_procfs_ct_seq_ops);
 }
 
-const static struct file_operations jit_procfs_ct_ops = {
+const static struct file_operations currenttime_procfs_ct_ops = {
 	.owner   = THIS_MODULE,
-	.open    = jit_procfs_ct_open,
+	.open    = currenttime_procfs_ct_open,
 	.read    = seq_read,
 	.llseek  = seq_lseek,
 	.release = seq_release,
 };
 
-static int jit_init_procfs(void)
+static int currenttime_init_procfs(void)
 {
 	struct proc_dir_entry *entry;
 
-	entry = proc_create("currenttime", S_IRUGO, NULL, &jit_procfs_ct_ops);
+	entry = proc_create("currenttime", S_IRUGO, NULL, &currenttime_procfs_ct_ops);
 	if (IS_ERR(entry))
 		return PTR_ERR(entry);
 
 	return 0;
 }
 
-static void jit_exit_procfs(void)
+static void currenttime_exit_procfs(void)
 {
 	remove_proc_entry("currenttime", NULL);
 }
 
-static int __init jit_init(void)
+static int __init currenttime_init(void)
 {
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
 
-	err = jit_init_procfs();
+	err = currenttime_init_procfs();
 	if (err)
 		return err;
 
 	return 0;
 }
-module_init(jit_init);
+module_init(currenttime_init);
 
-static void __exit jit_exit(void)
+static void __exit currenttime_exit(void)
 {
 	pr_info("%s\n", __FUNCTION__);
-	jit_exit_procfs();
+	currenttime_exit_procfs();
 }
-module_exit(jit_exit);
+module_exit(currenttime_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
-MODULE_DESCRIPTION("LDD's Just-In-Time module");
+MODULE_DESCRIPTION("LDD's currenttime module");
