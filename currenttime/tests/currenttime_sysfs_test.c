@@ -25,6 +25,26 @@ static int sysfs_test(int *i)
 			.file_name = "/sys/bus/ldd/devices/currenttime0/jiffies",
 			.flags = O_RDONLY,
 		},
+		{
+			.name = "/sys/bus/ldd/devices/currenttime0/jiffies_64 file",
+			.file_name = "/sys/bus/ldd/devices/currenttime0/jiffies_64",
+			.flags = O_RDONLY,
+		},
+		{
+			.name = "/sys/devices/ldd0/currenttime0/uevent file",
+			.file_name = "/sys/devices/ldd0/currenttime0/uevent",
+			.flags = O_RDONLY,
+		},
+		{
+			.name = "/sys/devices/ldd0/currenttime0/jiffies file",
+			.file_name = "/sys/devices/ldd0/currenttime0/jiffies",
+			.flags = O_RDONLY,
+		},
+		{
+			.name = "/sys/devices/ldd0/currenttime0/jiffies_64 file",
+			.file_name = "/sys/devices/ldd0/currenttime0/jiffies_64",
+			.flags = O_RDONLY,
+		},
 		{ /* sentry */ },
 	};
 	const struct test *t;

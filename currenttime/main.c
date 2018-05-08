@@ -19,12 +19,19 @@
 struct currenttime_device {
 	struct ldd_device		dev;
 	struct device_attribute		jiffies;
+	struct device_attribute		jiffies_64;
 };
 
 static ssize_t show_jiffies(struct device *dev, struct device_attribute *attr,
 			    char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "0x%lx\n", jiffies);
+	return snprintf(buf, PAGE_SIZE, "0x%08lx\n", jiffies);
+}
+
+static ssize_t show_jiffies_64(struct device *dev, struct device_attribute *attr,
+			       char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "0x%016llx\n", get_jiffies_64());
 }
 
 static struct currenttime_device currenttime_devices[] = {
@@ -33,6 +40,9 @@ static struct currenttime_device currenttime_devices[] = {
 		.jiffies.attr.name	= "jiffies",
 		.jiffies.attr.mode	= S_IRUGO,
 		.jiffies.show		= show_jiffies,
+		.jiffies_64.attr.name	= "jiffies_64",
+		.jiffies_64.attr.mode	= S_IRUGO,
+		.jiffies_64.show	= show_jiffies_64,
 	},
 	{ /* sentry */ },
 };
@@ -133,6 +143,12 @@ static int __init currenttime_init(void)
 			unregister_ldd_device(&d->dev);
 			goto unregister;
 		}
+		err = device_create_file(&d->dev.dev, &d->jiffies_64);
+		if (err) {
+			device_remove_file(&d->dev.dev, &d->jiffies);
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
 	}
 	return 0;
 unregister:
@@ -149,8 +165,11 @@ static void __exit currenttime_exit(void)
 	struct currenttime_device *d;
 
 	pr_info("%s\n", __FUNCTION__);
-	for (d = currenttime_devices; d->dev.name; d++)
+	for (d = currenttime_devices; d->dev.name; d++) {
+		device_remove_file(&d->dev.dev, &d->jiffies_64);
+		device_remove_file(&d->dev.dev, &d->jiffies);
 		unregister_ldd_device(&d->dev);
+	}
 	currenttime_exit_procfs();
 }
 module_exit(currenttime_exit);
