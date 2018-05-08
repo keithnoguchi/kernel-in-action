@@ -20,6 +20,7 @@ struct currenttime_device {
 	struct ldd_device		dev;
 	struct device_attribute		jiffies;
 	struct device_attribute		jiffies_64;
+	struct device_attribute		gettimeofday;
 };
 
 static ssize_t show_jiffies(struct device *dev, struct device_attribute *attr,
@@ -34,6 +35,14 @@ static ssize_t show_jiffies_64(struct device *dev, struct device_attribute *attr
 	return snprintf(buf, PAGE_SIZE, "0x%016llx\n", get_jiffies_64());
 }
 
+static ssize_t show_gettimeofday(struct device *dev, struct device_attribute *attr,
+				 char *buf)
+{
+	struct timeval tv;
+	do_gettimeofday(&tv);
+	return snprintf(buf, PAGE_SIZE, "%ld.%ld\n", tv.tv_sec, tv.tv_usec);
+}
+
 static struct currenttime_device currenttime_devices[] = {
 	{
 		.dev.name		= "currenttime0",
@@ -43,6 +52,9 @@ static struct currenttime_device currenttime_devices[] = {
 		.jiffies_64.attr.name	= "jiffies_64",
 		.jiffies_64.attr.mode	= S_IRUGO,
 		.jiffies_64.show	= show_jiffies_64,
+		.gettimeofday.attr.name	= "gettimeofday",
+		.gettimeofday.attr.mode	= S_IRUGO,
+		.gettimeofday.show	= show_gettimeofday,
 	},
 	{ /* sentry */ },
 };
@@ -149,6 +161,13 @@ static int __init currenttime_init(void)
 			unregister_ldd_device(&d->dev);
 			goto unregister;
 		}
+		err = device_create_file(&d->dev.dev, &d->gettimeofday);
+		if (err) {
+			device_remove_file(&d->dev.dev, &d->jiffies_64);
+			device_remove_file(&d->dev.dev, &d->jiffies);
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
 	}
 	return 0;
 unregister:
@@ -166,6 +185,7 @@ static void __exit currenttime_exit(void)
 
 	pr_info("%s\n", __FUNCTION__);
 	for (d = currenttime_devices; d->dev.name; d++) {
+		device_remove_file(&d->dev.dev, &d->gettimeofday);
 		device_remove_file(&d->dev.dev, &d->jiffies_64);
 		device_remove_file(&d->dev.dev, &d->jiffies);
 		unregister_ldd_device(&d->dev);
