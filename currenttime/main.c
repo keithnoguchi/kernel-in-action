@@ -15,9 +15,15 @@
 
 #define MAX_NR_CURRENTTIME	512
 
-static struct ldd_device currenttime_devices[] = {
-	{ .name = "currenttime0" },
-	{ .name = "currenttime1" },
+static struct currenttime_device {
+	struct device_attribute		jiffies;
+	struct device_attribute		jiffies_64;
+	struct device_attribute		gettimeofday;
+	struct device_attribute		current_kernel_time;
+	struct ldd_device		dev;
+} currenttime_devices[] = {
+	{ .dev.name = "currenttime0" },
+	{ .dev.name = "currenttime1" },
 	{ /* sentry */ },
 };
 
@@ -98,7 +104,7 @@ static void currenttime_exit_procfs(void)
 
 static int __init currenttime_init(void)
 {
-	struct ldd_device *d, *delete;
+	struct currenttime_device *d, *delete;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -108,8 +114,8 @@ static int __init currenttime_init(void)
 		return err;
 
 	/* sysfs based currenttime devices */
-	for (d = currenttime_devices; d->name; d++) {
-		err = register_ldd_device(d);
+	for (d = currenttime_devices; d->dev.name; d++) {
+		err = register_ldd_device(&d->dev);
 		if (err)
 			goto unregister;
 	}
@@ -117,7 +123,7 @@ static int __init currenttime_init(void)
 unregister:
 	delete = d;
 	for (d = currenttime_devices; d != delete; d++)
-		unregister_ldd_device(d);
+		unregister_ldd_device(&d->dev);
 	currenttime_exit_procfs();
 	return err;
 }
@@ -125,11 +131,11 @@ module_init(currenttime_init);
 
 static void __exit currenttime_exit(void)
 {
-	struct ldd_device *d;
+	struct currenttime_device *d;
 
 	pr_info("%s\n", __FUNCTION__);
-	for (d = currenttime_devices; d->name; d++)
-		unregister_ldd_device(d);
+	for (d = currenttime_devices; d->dev.name; d++)
+		unregister_ldd_device(&d->dev);
 	currenttime_exit_procfs();
 }
 module_exit(currenttime_exit);
