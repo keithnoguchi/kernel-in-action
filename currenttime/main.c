@@ -71,6 +71,64 @@ static struct currenttime_device currenttime_devices[] = {
 	{ /* sentry */ },
 };
 
+static int __init currenttime_init_sysfs(void)
+{
+	struct currenttime_device *d, *delete;
+	int err;
+
+	for (d = currenttime_devices; d->dev.name; d++) {
+		err = register_ldd_device(&d->dev);
+		if (err)
+			return err;
+
+		err = device_create_file(&d->dev.dev, &d->jiffies);
+		if (err) {
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
+		err = device_create_file(&d->dev.dev, &d->jiffies_64);
+		if (err) {
+			device_remove_file(&d->dev.dev, &d->jiffies);
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
+		err = device_create_file(&d->dev.dev, &d->gettimeofday);
+		if (err) {
+			device_remove_file(&d->dev.dev, &d->jiffies_64);
+			device_remove_file(&d->dev.dev, &d->jiffies);
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
+		err = device_create_file(&d->dev.dev, &d->current_kernel_time);
+		if (err) {
+			device_remove_file(&d->dev.dev, &d->gettimeofday);
+			device_remove_file(&d->dev.dev, &d->jiffies_64);
+			device_remove_file(&d->dev.dev, &d->jiffies);
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
+	}
+	return 0;
+unregister:
+	delete = d;
+	for (d = currenttime_devices; d != delete; d++)
+		unregister_ldd_device(&d->dev);
+	return err;
+}
+
+static void __exit currenttime_exit_sysfs(void)
+{
+	struct currenttime_device *d;
+
+	for (d = currenttime_devices; d->dev.name; d++) {
+		device_remove_file(&d->dev.dev, &d->current_kernel_time);
+		device_remove_file(&d->dev.dev, &d->gettimeofday);
+		device_remove_file(&d->dev.dev, &d->jiffies_64);
+		device_remove_file(&d->dev.dev, &d->jiffies);
+		unregister_ldd_device(&d->dev);
+	}
+}
+
 static void *currenttime_procfs_ct_seq_start(struct seq_file *s, loff_t *pos)
 {
 	pr_info("%s(%lld)\n", __FUNCTION__, *pos);
@@ -148,7 +206,6 @@ static void currenttime_exit_procfs(void)
 
 static int __init currenttime_init(void)
 {
-	struct currenttime_device *d, *delete;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -158,42 +215,12 @@ static int __init currenttime_init(void)
 		return err;
 
 	/* sysfs based currenttime devices */
-	for (d = currenttime_devices; d->dev.name; d++) {
-		err = register_ldd_device(&d->dev);
-		if (err)
-			goto unregister;
-		err = device_create_file(&d->dev.dev, &d->jiffies);
-		if (err) {
-			unregister_ldd_device(&d->dev);
-			goto unregister;
-		}
-		err = device_create_file(&d->dev.dev, &d->jiffies_64);
-		if (err) {
-			device_remove_file(&d->dev.dev, &d->jiffies);
-			unregister_ldd_device(&d->dev);
-			goto unregister;
-		}
-		err = device_create_file(&d->dev.dev, &d->gettimeofday);
-		if (err) {
-			device_remove_file(&d->dev.dev, &d->jiffies_64);
-			device_remove_file(&d->dev.dev, &d->jiffies);
-			unregister_ldd_device(&d->dev);
-			goto unregister;
-		}
-		err = device_create_file(&d->dev.dev, &d->current_kernel_time);
-		if (err) {
-			device_remove_file(&d->dev.dev, &d->gettimeofday);
-			device_remove_file(&d->dev.dev, &d->jiffies_64);
-			device_remove_file(&d->dev.dev, &d->jiffies);
-			unregister_ldd_device(&d->dev);
-			goto unregister;
-		}
-	}
+	err = currenttime_init_sysfs();
+	if (err)
+		goto unregister;
+
 	return 0;
 unregister:
-	delete = d;
-	for (d = currenttime_devices; d != delete; d++)
-		unregister_ldd_device(&d->dev);
 	currenttime_exit_procfs();
 	return err;
 }
@@ -201,16 +228,8 @@ module_init(currenttime_init);
 
 static void __exit currenttime_exit(void)
 {
-	struct currenttime_device *d;
-
 	pr_info("%s\n", __FUNCTION__);
-	for (d = currenttime_devices; d->dev.name; d++) {
-		device_remove_file(&d->dev.dev, &d->current_kernel_time);
-		device_remove_file(&d->dev.dev, &d->gettimeofday);
-		device_remove_file(&d->dev.dev, &d->jiffies_64);
-		device_remove_file(&d->dev.dev, &d->jiffies);
-		unregister_ldd_device(&d->dev);
-	}
+	currenttime_exit_sysfs();
 	currenttime_exit_procfs();
 }
 module_exit(currenttime_exit);
