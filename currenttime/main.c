@@ -4,13 +4,22 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
+#include <linux/time.h>
+#include <linux/jiffies.h>
+#include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/jiffies.h>
-#include <linux/time.h>
+
+#include "../ldd/ldd.h"
 
 #define MAX_NR_CURRENTTIME	512
+
+static struct ldd_device currenttime_devices[] = {
+	{ .name = "currenttime0" },
+	{ .name = "currenttime1" },
+	{ /* sentry */ },
+};
 
 static void *currenttime_procfs_ct_seq_start(struct seq_file *s, loff_t *pos)
 {
@@ -89,6 +98,7 @@ static void currenttime_exit_procfs(void)
 
 static int __init currenttime_init(void)
 {
+	struct ldd_device *d, *delete;
 	int err;
 
 	pr_info("%s\n", __FUNCTION__);
@@ -97,13 +107,29 @@ static int __init currenttime_init(void)
 	if (err)
 		return err;
 
+	/* sysfs based currenttime devices */
+	for (d = currenttime_devices; d->name; d++) {
+		err = register_ldd_device(d);
+		if (err)
+			goto unregister;
+	}
 	return 0;
+unregister:
+	delete = d;
+	for (d = currenttime_devices; d != delete; d++)
+		unregister_ldd_device(d);
+	currenttime_exit_procfs();
+	return err;
 }
 module_init(currenttime_init);
 
 static void __exit currenttime_exit(void)
 {
+	struct ldd_device *d;
+
 	pr_info("%s\n", __FUNCTION__);
+	for (d = currenttime_devices; d->name; d++)
+		unregister_ldd_device(d);
 	currenttime_exit_procfs();
 }
 module_exit(currenttime_exit);
