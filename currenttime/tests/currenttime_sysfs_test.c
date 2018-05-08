@@ -36,6 +36,11 @@ static int sysfs_test(int *i)
 			.flags = O_RDONLY,
 		},
 		{
+			.name = "/sys/bus/ldd/devices/currenttime0/current_kernel_time file",
+			.file_name = "/sys/bus/ldd/devices/currenttime0/current_kernel_time",
+			.flags = O_RDONLY,
+		},
+		{
 			.name = "/sys/devices/ldd0/currenttime0/uevent file",
 			.file_name = "/sys/devices/ldd0/currenttime0/uevent",
 			.flags = O_RDONLY,
@@ -53,6 +58,11 @@ static int sysfs_test(int *i)
 		{
 			.name = "/sys/devices/ldd0/currenttime0/gettimeofday file",
 			.file_name = "/sys/devices/ldd0/currenttime0/gettimeofday",
+			.flags = O_RDONLY,
+		},
+		{
+			.name = "/sys/devices/ldd0/currenttime0/current_kernel_time file",
+			.file_name = "/sys/devices/ldd0/currenttime0/current_kernel_time",
 			.flags = O_RDONLY,
 		},
 		{ /* sentry */ },
