@@ -21,8 +21,8 @@ static int sysfs_test(int *i)
 			.flags = O_RDONLY,
 		},
 		{
-			.name = "/sys/bus/ldd/devices/currenttime1/uevent file",
-			.file_name = "/sys/bus/ldd/devices/currenttime1/uevent",
+			.name = "/sys/bus/ldd/devices/currenttime0/jiffies file",
+			.file_name = "/sys/bus/ldd/devices/currenttime0/jiffies",
 			.flags = O_RDONLY,
 		},
 		{ /* sentry */ },

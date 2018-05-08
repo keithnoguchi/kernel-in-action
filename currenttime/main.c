@@ -4,26 +4,36 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
-#include <linux/time.h>
-#include <linux/jiffies.h>
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/time.h>
+#include <linux/jiffies.h>
 
 #include "../ldd/ldd.h"
 
 #define MAX_NR_CURRENTTIME	512
 
-static struct currenttime_device {
-	struct device_attribute		jiffies;
-	struct device_attribute		jiffies_64;
-	struct device_attribute		gettimeofday;
-	struct device_attribute		current_kernel_time;
+/* sysfs based currenttime device */
+struct currenttime_device {
 	struct ldd_device		dev;
-} currenttime_devices[] = {
-	{ .dev.name = "currenttime0" },
-	{ .dev.name = "currenttime1" },
+	struct device_attribute		jiffies;
+};
+
+static ssize_t show_jiffies(struct device *dev, struct device_attribute *attr,
+			    char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "0x%lx\n", jiffies);
+}
+
+static struct currenttime_device currenttime_devices[] = {
+	{
+		.dev.name		= "currenttime0",
+		.jiffies.attr.name	= "jiffies",
+		.jiffies.attr.mode	= S_IRUGO,
+		.jiffies.show		= show_jiffies,
+	},
 	{ /* sentry */ },
 };
 
@@ -118,6 +128,11 @@ static int __init currenttime_init(void)
 		err = register_ldd_device(&d->dev);
 		if (err)
 			goto unregister;
+		err = device_create_file(&d->dev.dev, &d->jiffies);
+		if (err) {
+			unregister_ldd_device(&d->dev);
+			goto unregister;
+		}
 	}
 	return 0;
 unregister:
