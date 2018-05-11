@@ -14,6 +14,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Ldd](#ldd)
   - [Sculld](#sculld)
   - [/proc/currenttime](#currenttime)
+  - [Snull](#snull)
 - [Test](#test)
 - [Unload](#unload)
 - [Cleanup](#cleanup)
@@ -427,13 +428,153 @@ air1$
 [currenttime]: currenttime/main.c
 
 ```sh
-arch01$ head -5  /proc/currenttime
+air1$ head -5  /proc/currenttime
 jiffies         jiffies_64              do_gettimeofday()       current_kernel_time()
 0x1000838ea     0x00000001000838ea      1525717421.454863       1525717421.449790319
 0x1000838eb     0x00000001000838eb      1525717421.457137       1525717421.453123652
 0x1000838eb     0x00000001000838eb      1525717421.459434       1525717421.453123652
 0x1000838ec     0x00000001000838ec      1525717421.461756       1525717421.456456986
-arch01$
+air1$
+```
+
+### Snull
+
+[snull] is a virtual network driver, explained in [LDD Chapter 16]:
+
+[snull]: snull/main.c
+
+```sh
+air1$ sudo make install
+make -C /lib/modules/4.16.8.7/build M=/home/kei/src/linux-4.16.8/kernel-in-action modules_install
+make[1]: Entering directory '/home/kei/src/linux-4.16.8'
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/currenttime/currenttime.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/hello/hello.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/ldd/ldd.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/ls/ls.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/lspci/lspci.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/scull/scull.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/sculld/sculld.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/scullp/scullp.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/sleepy/sleepy.ko
+  INSTALL /home/kei/src/linux-4.16.8/kernel-in-action/snull/snull.ko
+  DEPMOD  4.16.8.7
+make[1]: Leaving directory '/home/kei/src/linux-4.16.8'
+air1$ sudo modprobe snull
+[ 1768.924762] snull_init_module
+[ 1768.925464] snull_init((unnamed net_device))
+[ 1768.926632] snull_init((unnamed net_device))
+air1$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 00:00:bb:00:02:03 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.122.2/24 brd 192.168.122.255 scope global dynamic ens3
+       valid_lft 1830sec preferred_lft 1830sec
+    inet6 fe80::200:bbff:fe00:203/64 scope link
+       valid_lft forever preferred_lft forever
+3: ens4: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:00:aa:00:02:04 brd ff:ff:ff:ff:ff:ff
+4: ens5: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:00:aa:00:02:05 brd ff:ff:ff:ff:ff:ff
+27: sn0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+28: sn1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+```
+
+and it's shown in the sysfs system:
+
+```sh
+air1$ tree /sys/devices/virtual/net/sn0
+/sys/devices/virtual/net/sn0
+|-- addr_assign_type
+|-- addr_len
+|-- address
+|-- broadcast
+|-- carrier
+|-- carrier_changes
+|-- carrier_down_count
+|-- carrier_up_count
+|-- dev_id
+|-- dev_port
+|-- dormant
+|-- duplex
+|-- flags
+|-- gro_flush_timeout
+|-- ifalias
+|-- ifindex
+|-- iflink
+|-- link_mode
+|-- mtu
+|-- name_assign_type
+|-- netdev_group
+|-- operstate
+|-- phys_port_id
+|-- phys_port_name
+|-- phys_switch_id
+|-- power
+|   |-- async
+|   |-- autosuspend_delay_ms
+|   |-- control
+|   |-- runtime_active_kids
+|   |-- runtime_active_time
+|   |-- runtime_enabled
+|   |-- runtime_status
+|   |-- runtime_suspended_time
+|   `-- runtime_usage
+|-- proto_down
+|-- queues
+|   |-- rx-0
+|   |   |-- rps_cpus
+|   |   `-- rps_flow_cnt
+|   `-- tx-0
+|       |-- byte_queue_limits
+|       |   |-- hold_time
+|       |   |-- inflight
+|       |   |-- limit
+|       |   |-- limit_max
+|       |   `-- limit_min
+|       |-- traffic_class
+|       |-- tx_maxrate
+|       |-- tx_timeout
+|       `-- xps_cpus
+|-- speed
+|-- statistics
+|   |-- collisions
+|   |-- multicast
+|   |-- rx_bytes
+|   |-- rx_compressed
+|   |-- rx_crc_errors
+|   |-- rx_dropped
+|   |-- rx_errors
+|   |-- rx_fifo_errors
+|   |-- rx_frame_errors
+|   |-- rx_length_errors
+|   |-- rx_missed_errors
+|   |-- rx_nohandler
+|   |-- rx_over_errors
+|   |-- rx_packets
+|   |-- tx_aborted_errors
+|   |-- tx_bytes
+|   |-- tx_carrier_errors
+|   |-- tx_compressed
+|   |-- tx_dropped
+|   |-- tx_errors
+|   |-- tx_fifo_errors
+|   |-- tx_heartbeat_errors
+|   |-- tx_packets
+|   `-- tx_window_errors
+|-- subsystem -> ../../../../class/net
+|-- tx_queue_len
+|-- type
+`-- uevent
+
+7 directories, 74 files
+air1$
 ```
 
 ## Test
