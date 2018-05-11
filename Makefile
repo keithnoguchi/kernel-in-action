@@ -8,6 +8,7 @@ obj-m += scullp/
 obj-m += ldd/
 obj-m += sculld/
 obj-m += currenttime/
+obj-m += snull/
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
@@ -30,6 +31,7 @@ TARGETS += ldd
 TARGETS += sculld
 TARGETS += currenttime
 TARGETS += lspci
+TARGETS += snull
 
 .PHONY: run_tests check kselftest kselftest-clean
 run_tests check: kselftest

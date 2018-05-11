@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
-obj-m += sculld.o
-sculld-objs = main.o
+obj-m += snull.o
+snull-objs = main.o
 
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
 all: modules
 install: modules_install
-modules modules_install clean help:
+modules modules_install help clean:
 	$(MAKE) -C $(KERNDIR) M=$(shell pwd) $@
