@@ -10,10 +10,32 @@
 static struct net_device *netdevs[2];
 
 /* snull driver */
-struct snull { };
+struct snull_dev { };
 
 /* net_device_ops */
-const static struct net_device_ops snull_ops = {};
+static int snull_open(struct net_device *dev)
+{
+	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+	return 0;
+}
+
+static int snull_close(struct net_device *dev)
+{
+	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+	return 0;
+}
+
+static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
+{
+	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+	return NETDEV_TX_OK;
+}
+
+const static struct net_device_ops snull_ops = {
+	.ndo_open	= snull_open,
+	.ndo_stop	= snull_close,
+	.ndo_start_xmit	= snull_tx,
+};
 
 static void snull_init(struct net_device *dev)
 {
@@ -32,7 +54,7 @@ static int __init snull_init_module(void)
 		struct net_device *dev;
 		int err;
 
-		dev = alloc_netdev(sizeof(struct snull), "sn%d",
+		dev = alloc_netdev(sizeof(struct snull_dev), "sn%d",
 				   NET_NAME_UNKNOWN, snull_init);
 		if (!dev)
 			goto unregister;
