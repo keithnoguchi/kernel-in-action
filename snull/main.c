@@ -41,7 +41,8 @@ static void snull_init(struct net_device *dev)
 {
 	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
 	ether_setup(dev);
-	dev->netdev_ops = &snull_ops;
+	dev->netdev_ops	= &snull_ops;
+	dev->flags	|= IFF_NOARP;
 }
 
 static int __init snull_init_module(void)
