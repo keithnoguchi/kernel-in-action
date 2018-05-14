@@ -39,7 +39,19 @@ static int snull_release(struct net_device *dev)
 
 static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 {
+	char *data, shortpkt[ETH_ZLEN];
+	int len;
+
 	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+
+	data = skb->data;
+	len = skb->len;
+	if (len < ETH_ZLEN) {
+		memset(shortpkt, 0, ETH_ZLEN);
+		memcpy(shortpkt, skb->data, skb->len);
+		data = shortpkt;
+		len = ETH_ZLEN;
+	}
 	return NETDEV_TX_OK;
 }
 
