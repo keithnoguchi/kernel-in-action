@@ -3,6 +3,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/string.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 
@@ -16,12 +17,23 @@ struct snull_dev { };
 static int snull_open(struct net_device *dev)
 {
 	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+
+	/*
+	 * Assign the hardware address of the board: use "\0SNULx",
+	 * where x is 0 or 1.  The first byte is '\0' to avoid being
+	 * a multicast address (the first byte of multicat addrs is odd).
+	 */
+	memcpy(dev->dev_addr, "\0SNUL0", ETH_ALEN);
+	if (dev == netdevs[1])
+		dev->dev_addr[ETH_ALEN-1]++;
+	netif_start_queue(dev);
 	return 0;
 }
 
-static int snull_close(struct net_device *dev)
+static int snull_release(struct net_device *dev)
 {
 	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+	netif_stop_queue(dev);
 	return 0;
 }
 
@@ -33,7 +45,7 @@ static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 
 const static struct net_device_ops snull_ops = {
 	.ndo_open	= snull_open,
-	.ndo_stop	= snull_close,
+	.ndo_stop	= snull_release,
 	.ndo_start_xmit	= snull_tx,
 };
 
