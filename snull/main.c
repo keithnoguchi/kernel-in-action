@@ -55,10 +55,16 @@ static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 	return NETDEV_TX_OK;
 }
 
+static void snull_tx_timeout(struct net_device *dev)
+{
+	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+}
+
 const static struct net_device_ops snull_ops = {
 	.ndo_open	= snull_open,
 	.ndo_stop	= snull_release,
 	.ndo_start_xmit	= snull_tx,
+	.ndo_tx_timeout	= snull_tx_timeout,
 };
 
 static void snull_init(struct net_device *dev)
