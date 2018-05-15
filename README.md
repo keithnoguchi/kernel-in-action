@@ -577,6 +577,68 @@ air1$ tree /sys/devices/virtual/net/sn0
 air1$
 ```
 
+Now, let's flood the packets between `sn0` and `sn1`.
+First, IP addresses:
+
+```sh
+arch02$ sudo ip l set up dev sn0
+arch02$ sudo ip l set up dev sn1
+arch02$ sudo ip a add 1.1.0.1/24 dev sn0
+arch02$ sudo ip a add 1.1.1.2/24 dev sn1
+arch02$ ip r | grep 1.1
+1.1.0.0/24 dev sn0 proto kernel scope link src 1.1.0.1
+1.1.1.0/24 dev sn1 proto kernel scope link src 1.1.1.2
+```
+
+and check the reachability between `sn0` and `sn1`:
+
+```sh
+arch02$ ping 1.1.0.2 -c 1
+PING 1.1.0.2 (1.1.0.2) 56(84) bytes of data.
+64 bytes from 1.1.0.2: icmp_seq=1 ttl=64 time=3.34 ms
+
+--- 1.1.0.2 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 3.343/3.343/3.343/0.000 ms
+```
+
+Good. Let's run ping flood with `ping -f`:
+
+```sh
+arch02$ sudo ping -f 1.1.0.2
+PING 1.1.0.2 (1.1.0.2) 56(84) bytes of data.
+^C
+--- 1.1.0.2 ping statistics ---
+4619 packets transmitted, 4619 received, 0% packet loss, time 13169ms
+rtt min/avg/max/mdev = 1.554/2.583/4.421/0.209 ms, ipg/ewma 2.851/2.622 ms
+```
+
+Stat looks good!
+
+```sh
+arch02$ ifconfig sn0
+sn0: flags=4291<UP,BROADCAST,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 1.1.0.1  netmask 255.255.255.0  broadcast 0.0.0.0
+        inet6 fe80::253:4eff:fe55:4c30  prefixlen 64  scopeid 0x20<link>
+        ether 00:53:4e:55:4c:30  txqueuelen 1000  (Ethernet)
+        RX packets 4634  bytes 453836 (443.1 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 4633  bytes 453766 (443.1 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+arch02$ ifconfig sn1
+sn1: flags=4291<UP,BROADCAST,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 1.1.1.2  netmask 255.255.255.0  broadcast 0.0.0.0
+        inet6 fe80::253:4eff:fe55:4c31  prefixlen 64  scopeid 0x20<link>
+        ether 00:53:4e:55:4c:31  txqueuelen 1000  (Ethernet)
+        RX packets 4634  bytes 453836 (443.1 KiB)
+        RX errors 0  dropped 7  overruns 0  frame 0
+        TX packets 4634  bytes 453836 (443.1 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+air1$
+```
+
 ## Test
 
 `make run_tests` will trigger the kernel's [kselftest] based tests.  Yes, [TDD], even for the kernel modules!

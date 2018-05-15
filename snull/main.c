@@ -267,6 +267,7 @@ const static struct net_device_ops snull_ops = {
 	.ndo_tx_timeout	= snull_tx_timeout,
 };
 
+/* header_ops */
 static int snull_header(struct sk_buff *skb, struct net_device *dev,
 			unsigned short type, const void *daddr,
 			const void *saddr, unsigned int len)
