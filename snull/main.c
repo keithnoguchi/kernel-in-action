@@ -192,69 +192,6 @@ static int snull_hw_tx(char *data, int len, struct net_device *dev)
 	return 0;
 }
 
-static int snull_rx(struct net_device *dev, struct snull_buff *pkt)
-{
-	struct sk_buff *skb;
-	int err = -ENOMEM;
-
-	netdev_info(dev, "%s\n", __FUNCTION__);
-
-	skb = dev_alloc_skb(pkt->datalen + 2);
-	if (unlikely(!skb)) {
-		if (printk_ratelimit())
-			netdev_warn(dev, "low on mem - dropped");
-		dev->stats.rx_dropped++;
-		goto out;
-	}
-	skb_reserve(skb, 2); /* 16 alignment */
-	memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
-
-	skb->dev = dev;
-	skb->protocol = eth_type_trans(skb, dev);
-	skb->ip_summed = CHECKSUM_UNNECESSARY;
-	dev->stats.rx_packets++;
-	dev->stats.rx_bytes += pkt->datalen;
-	err = netif_rx(skb);
-out:
-	return err;
-}
-
-/* old/regular interrupt handler */
-static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
-					   struct pt_regs *regs)
-{
-	struct net_device *dev = (struct net_device *) dev_id;
-	struct snull_dev *s;
-	int status;
-	int err = 0;
-
-	if (!dev)
-		return IRQ_NONE;
-
-	/* status flag */
-	s = netdev_priv(dev);
-	spin_lock(&s->lock);
-	status = s->status;
-	s->status = 0;
-	spin_unlock(&s->lock);
-
-	if (status & SNULL_RX_INTR) {
-		struct snull_buff *pkt = dequeue_rx(dev);
-		if (pkt) {
-			err = snull_rx(dev, pkt);
-			/* queue it back to the source dev pool */
-			enqueue_pool(dest_dev(dev), pkt);
-		}
-	}
-	if (status & SNULL_TX_INTR) {
-		dev_kfree_skb(s->skb);
-	}
-
-	if (err)
-		return IRQ_NONE;
-	return IRQ_HANDLED;
-}
-
 /* net_device_ops */
 static int snull_open(struct net_device *dev)
 {
@@ -357,6 +294,69 @@ static int snull_header(struct sk_buff *skb, struct net_device *dev,
 const static struct header_ops snull_header_ops = {
 	.create		= snull_header,
 };
+
+static int snull_rx(struct net_device *dev, struct snull_buff *pkt)
+{
+	struct sk_buff *skb;
+	int err = -ENOMEM;
+
+	netdev_info(dev, "%s\n", __FUNCTION__);
+
+	skb = dev_alloc_skb(pkt->datalen + 2);
+	if (unlikely(!skb)) {
+		if (printk_ratelimit())
+			netdev_warn(dev, "low on mem - dropped");
+		dev->stats.rx_dropped++;
+		goto out;
+	}
+	skb_reserve(skb, 2); /* 16 alignment */
+	memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+
+	skb->dev = dev;
+	skb->protocol = eth_type_trans(skb, dev);
+	skb->ip_summed = CHECKSUM_UNNECESSARY;
+	dev->stats.rx_packets++;
+	dev->stats.rx_bytes += pkt->datalen;
+	err = netif_rx(skb);
+out:
+	return err;
+}
+
+/* old/regular interrupt handler */
+static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
+					   struct pt_regs *regs)
+{
+	struct net_device *dev = (struct net_device *) dev_id;
+	struct snull_dev *s;
+	int status;
+	int err = 0;
+
+	if (!dev)
+		return IRQ_NONE;
+
+	/* status flag */
+	s = netdev_priv(dev);
+	spin_lock(&s->lock);
+	status = s->status;
+	s->status = 0;
+	spin_unlock(&s->lock);
+
+	if (status & SNULL_RX_INTR) {
+		struct snull_buff *pkt = dequeue_rx(dev);
+		if (pkt) {
+			err = snull_rx(dev, pkt);
+			/* queue it back to the source dev pool */
+			enqueue_pool(dest_dev(dev), pkt);
+		}
+	}
+	if (status & SNULL_TX_INTR) {
+		dev_kfree_skb(s->skb);
+	}
+
+	if (err)
+		return IRQ_NONE;
+	return IRQ_HANDLED;
+}
 
 static void snull_init(struct net_device *dev)
 {
