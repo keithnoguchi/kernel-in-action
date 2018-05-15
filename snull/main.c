@@ -330,6 +330,34 @@ const static struct net_device_ops snull_ops = {
 	.ndo_tx_timeout	= snull_tx_timeout,
 };
 
+static int snull_header(struct sk_buff *skb, struct net_device *dev,
+			unsigned short type, const void *daddr,
+			const void *saddr, unsigned int len)
+{
+	struct ethhdr *eth = skb_push(skb, ETH_HLEN);
+
+	if (type != ETH_P_802_3 && type != ETH_P_802_2)
+		eth->h_proto = htons(type);
+	else
+		eth->h_proto = htons(len);
+
+	if (!saddr)
+		saddr = dev->dev_addr;
+	memcpy(eth->h_source, saddr, ETH_ALEN);
+
+	if (!daddr)
+		daddr = dev->dev_addr;
+	memcpy(eth->h_dest, daddr, ETH_ALEN);
+
+	eth->h_dest[ETH_ALEN-1]	^= 0x01; /* dest is us xor 1 */
+
+	return ETH_HLEN;
+}
+
+const static struct header_ops snull_header_ops = {
+	.create		= snull_header,
+};
+
 static void snull_init(struct net_device *dev)
 {
 	struct snull_dev *s = netdev_priv(dev);
@@ -337,6 +365,7 @@ static void snull_init(struct net_device *dev)
 	netdev_info(dev, "%s\n", __FUNCTION__);
 	ether_setup(dev);
 	dev->netdev_ops	= &snull_ops;
+	dev->header_ops = &snull_header_ops;
 	dev->flags	|= IFF_NOARP;
 	s->interrupt	= snull_regular_interrupt;
 
