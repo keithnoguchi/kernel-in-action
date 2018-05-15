@@ -86,14 +86,11 @@ void enqueue_pool(struct net_device *dev, struct snull_buff *b)
 {
 	struct snull_dev *s = netdev_priv(dev);
 	unsigned long flags;
-	int empty = 0;
 
 	spin_lock_irqsave(&s->lock, flags);
-	if (!s->pool)
-		empty = 1;
 	b->next = s->pool;
 	s->pool = b;
-	if (netif_queue_stopped(dev) && empty)
+	if (netif_queue_stopped(dev) && !b->next)
 		netif_wake_queue(dev);
 	spin_unlock_irqrestore(&s->lock, flags);
 }
@@ -209,7 +206,9 @@ static int snull_rx(struct net_device *dev, struct snull_buff *pkt)
 		dev->stats.rx_dropped++;
 		goto out;
 	}
+	skb_reserve(skb, 2); /* 16 alignment */
 	memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+
 	skb->dev = dev;
 	skb->protocol = eth_type_trans(skb, dev);
 	skb->ip_summed = CHECKSUM_UNNECESSARY;
