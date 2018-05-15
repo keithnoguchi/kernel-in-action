@@ -214,7 +214,7 @@ static int snull_open(struct net_device *dev)
 
 static int snull_release(struct net_device *dev)
 {
-	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+	netdev_info(dev, "%s\n", __FUNCTION__);
 	netif_stop_queue(dev);
 	free_pool(dev);
 	free_rx(dev);
@@ -257,7 +257,7 @@ static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 
 static void snull_tx_timeout(struct net_device *dev)
 {
-	pr_info("%s(%s)\n", __FUNCTION__, netdev_name(dev));
+	netdev_info(dev, "%s\n", __FUNCTION__);
 }
 
 const static struct net_device_ops snull_ops = {
