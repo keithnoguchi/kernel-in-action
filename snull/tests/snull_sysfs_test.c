@@ -19,6 +19,11 @@ static int sysfs_open_test(int *i)
 		int		flags;
 	} tests[] = {
 		{
+			.name = "/sys/module/snull/parameters/tx_lockup file",
+			.file_name = "/sys/module/snull/parameters/tx_lockup",
+			.flags = O_RDWR,
+		},
+		{
 			.name = "/sys/devices/virtual/net/sn0/ifindex file",
 			.file_name = "/sys/devices/virtual/net/sn0/ifindex",
 			.flags = O_RDONLY,

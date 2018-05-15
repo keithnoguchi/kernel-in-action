@@ -10,6 +10,10 @@
 #include <linux/etherdevice.h>
 #include <linux/ip.h>
 
+/* device lockup parameters */
+static int tx_lockup = 0;
+module_param(tx_lockup, int, S_IRUGO|S_IWUSR);
+
 /* sn0 and sn1 */
 static struct net_device *netdevs[2];
 
@@ -37,6 +41,18 @@ struct snull_dev {
 	struct snull_buff	*rx_queue;
 	irqreturn_t (*interrupt)(int, void *, struct pt_regs *);
 };
+
+static inline int snull_tx_lockup(void)
+{
+	int val;
+
+	/* lock is required, as in linux/moduleparam.h */
+	kernel_param_lock(THIS_MODULE);
+	val = tx_lockup;
+	kernel_param_unlock(THIS_MODULE);
+
+	return val;
+}
 
 static int init_pool(struct net_device *dev)
 {
@@ -154,6 +170,7 @@ static int snull_hw_tx(char *data, int len, struct net_device *dev)
 	struct snull_buff *b;
 	struct iphdr *ih;
 	u32 *saddr, *daddr;
+	int lockup;
 
 	netdev_info(dev, "%s\n", __FUNCTION__);
 
@@ -185,6 +202,13 @@ static int snull_hw_tx(char *data, int len, struct net_device *dev)
 	dst = dest_dev(dev);
 	enqueue_rx(dst, b);
 	snull_interrupt(dst, SNULL_RX_INTR);
+
+	/* simulate the TX lockup */
+	lockup = snull_tx_lockup();
+	if (unlikely(lockup && ((dev->stats.tx_packets + 1) % lockup) == 0)) {
+		netif_stop_queue(dev);
+		return -EINVAL;
+	}
 
 	/* done with the tx */
 	snull_interrupt(dev, SNULL_TX_INTR);
