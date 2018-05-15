@@ -12,6 +12,11 @@
 /* sn0 and sn1 */
 static struct net_device *netdevs[2];
 
+static struct net_device *get_pair(const struct net_device *dev)
+{
+	return dev == netdevs[0] ? netdevs[1] : netdevs[0];
+}
+
 /* snull packet buffer */
 struct snull_buff {
 	struct snull_buff	*next;
@@ -26,9 +31,10 @@ struct snull_dev {
 	int			status;
 #define SNULL_TX_INTR		(1 << 0)
 #define SNULL_RX_INTR		(1 << 1)
+	struct sk_buff		*skb;		/* inflight TX skb */
 	struct snull_buff	*pool;
-	struct snull_buff	*rxq;
-	void (*interrupt)(int, struct snull_dev *, struct pt_regs *);
+	struct snull_buff	*rx_queue;
+	irqreturn_t (*interrupt)(int, void *, struct pt_regs *);
 };
 
 static int init_pool(struct net_device *dev)
@@ -91,8 +97,8 @@ static void free_rx(struct net_device *dev)
 	struct snull_dev *s = netdev_priv(dev);
 	struct snull_buff *b;
 
-	while ((b = s->rxq)) {
-		s->rxq = b->next;
+	while ((b = s->rx_queue)) {
+		s->rx_queue = b->next;
 		kfree(b);
 	}
 }
@@ -104,9 +110,9 @@ struct snull_buff *dequeue_rx(struct net_device *dev)
 	unsigned long flags;
 
 	spin_lock_irqsave(&s->lock, flags);
-	pkt = s->rxq;
+	pkt = s->rx_queue;
 	if (pkt)
-		s->rxq = pkt->next;
+		s->rx_queue = pkt->next;
 	spin_unlock_irqrestore(&s->lock, flags);
 
 	return pkt;
@@ -120,22 +126,13 @@ static void enqueue_rx(struct net_device *dev, struct snull_buff *pkt)
 
 	pkt->next = NULL;
 	spin_lock_irqsave(&s->lock, flags);
-	for (bp = &s->rxq; *bp; bp = &(*bp)->next)
+	for (bp = &s->rx_queue; *bp; bp = &(*bp)->next)
 		; /* skip to the tail */
 	*bp = pkt;
 	spin_unlock_irqrestore(&s->lock, flags);
 }
 
-static inline void snull_interrupt(int irq, void *dev_id, struct pt_regs *regs)
-{
-	struct net_device *dev = (struct net_device *) dev_id;
-	struct snull_dev *s = netdev_priv(dev);
-
-	if (s->interrupt)
-		s->interrupt(irq, s, regs);
-}
-
-static void snull_hw_interrupt(struct net_device *dev, int interrupt)
+static void snull_interrupt(struct net_device *dev, int interrupt)
 {
 	struct snull_dev *s = netdev_priv(dev);
 	unsigned long flags;
@@ -144,7 +141,8 @@ static void snull_hw_interrupt(struct net_device *dev, int interrupt)
 	s->status |= interrupt;
 	spin_unlock_irqrestore(&s->lock, flags);
 
-	snull_interrupt(0, dev, NULL);
+	if (s->interrupt)
+		s->interrupt(0, dev, NULL);
 }
 
 static int snull_hw_tx(char *data, int len, struct net_device *dev)
@@ -181,14 +179,55 @@ static int snull_hw_tx(char *data, int len, struct net_device *dev)
 	memcpy(b->data, data, len);
 
 	/* put it in the destination RX queue, and trigger the interrupt */
-	dst = (dev == netdevs[0] ? netdevs[1] : netdevs[0]);
+	dst = get_pair(dev);
 	enqueue_rx(dst, b);
-	snull_hw_interrupt(dst, SNULL_RX_INTR);
+	snull_interrupt(dst, SNULL_RX_INTR);
 
 	/* done with the tx */
-	snull_hw_interrupt(dev, SNULL_TX_INTR);
+	snull_interrupt(dev, SNULL_TX_INTR);
 
 	return 0;
+}
+
+static void snull_rx(struct net_device *dev, struct snull_buff *pkt)
+{
+	return;
+}
+
+/* old/regular interrupt handler */
+static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
+					   struct pt_regs *regs)
+{
+	struct net_device *dev = (struct net_device *) dev_id;
+	struct snull_dev *s;
+	int status;
+
+	if (!dev)
+		return IRQ_NONE;
+
+	/* status flag */
+	s = netdev_priv(dev);
+	spin_lock(&s->lock);
+	status = s->status;
+	s->status = 0;
+	spin_unlock(&s->lock);
+
+	if (status & SNULL_RX_INTR) {
+		struct snull_buff *pkt = dequeue_rx(dev);
+		if (pkt) {
+			struct net_device *src = get_pair(dev);
+
+			snull_rx(dev, pkt);
+
+			/* queue it back to the source dev pool */
+			enqueue_pool(src, pkt);
+		}
+	}
+	if (status & SNULL_TX_INTR) {
+		dev_kfree_skb(s->skb);
+	}
+
+	return IRQ_HANDLED;
 }
 
 /* net_device_ops */
@@ -222,7 +261,9 @@ static int snull_release(struct net_device *dev)
 
 static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 {
+	struct snull_dev *s = netdev_priv(dev);
 	char *data, shortpkt[ETH_ZLEN];
+	unsigned long flags;
 	int len;
 
 	netdev_info(dev, "%s\n", __FUNCTION__);
@@ -236,12 +277,19 @@ static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 		len = ETH_ZLEN;
 	}
 
+	/* XXX inflight skb, to be freed by IRQ handler */
+	spin_lock_irqsave(&s->lock, flags);
+	s->skb = skb;
+	spin_unlock_irqrestore(&s->lock, flags);
+
 	if (snull_hw_tx(data, len, dev)) {
 		dev->stats.tx_errors++;
 	} else {
+		/* XXX should be after TX interrupt */
 		dev->stats.tx_packets++;
 		dev->stats.tx_bytes += len;
 	}
+
 	return NETDEV_TX_OK;
 }
 
@@ -265,6 +313,7 @@ static void snull_init(struct net_device *dev)
 	ether_setup(dev);
 	dev->netdev_ops	= &snull_ops;
 	dev->flags	|= IFF_NOARP;
+	s->interrupt	= snull_regular_interrupt;
 
 	spin_lock_init(&s->lock);
 }
