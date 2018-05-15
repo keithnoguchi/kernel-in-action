@@ -5,6 +5,7 @@
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/spinlock.h>
+#include <linux/slab.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/ip.h>
@@ -85,10 +86,15 @@ void enqueue_pool(struct net_device *dev, struct snull_buff *b)
 {
 	struct snull_dev *s = netdev_priv(dev);
 	unsigned long flags;
+	int empty = 0;
 
 	spin_lock_irqsave(&s->lock, flags);
+	if (!s->pool)
+		empty = 1;
 	b->next = s->pool;
 	s->pool = b;
+	if (netif_queue_stopped(dev) && empty)
+		netif_wake_queue(dev);
 	spin_unlock_irqrestore(&s->lock, flags);
 }
 
@@ -236,7 +242,7 @@ static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
 	if (status & SNULL_RX_INTR) {
 		struct snull_buff *pkt = dequeue_rx(dev);
 		if (pkt) {
-			int err = snull_rx(dev, pkt);
+			err = snull_rx(dev, pkt);
 			/* queue it back to the source dev pool */
 			enqueue_pool(get_pair(dev), pkt);
 		}
