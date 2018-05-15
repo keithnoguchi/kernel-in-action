@@ -37,6 +37,7 @@ struct snull_dev {
 #define SNULL_TX_INTR		(1 << 0)
 #define SNULL_RX_INTR		(1 << 1)
 	struct sk_buff		*skb;		/* inflight TX skb */
+	int			datalen;	/* inflight TX data len */
 	struct snull_buff	*pool;
 	struct snull_buff	*rx_queue;
 	irqreturn_t (*interrupt)(int, void *, struct pt_regs *);
@@ -207,11 +208,10 @@ static int snull_hw_tx(char *data, int len, struct net_device *dev)
 	lockup = snull_tx_lockup();
 	if (unlikely(lockup && ((dev->stats.tx_packets + 1) % lockup) == 0)) {
 		netif_stop_queue(dev);
-		return -EINVAL;
+	} else {
+		/* done with the tx */
+		snull_interrupt(dev, SNULL_TX_INTR);
 	}
-
-	/* done with the tx */
-	snull_interrupt(dev, SNULL_TX_INTR);
 
 	return 0;
 }
@@ -263,19 +263,16 @@ static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 		len = ETH_ZLEN;
 	}
 
-	/* XXX inflight skb, to be freed by IRQ handler */
+	/* XXX inflight skb, to be freed at IRQ handler */
 	spin_lock_irqsave(&s->lock, flags);
+	s->datalen = len;
 	s->skb = skb;
 	spin_unlock_irqrestore(&s->lock, flags);
 
 	if (snull_hw_tx(data, len, dev)) {
 		dev->stats.tx_errors++;
-	} else {
-		/* XXX should be after TX interrupt */
-		dev->stats.tx_packets++;
-		dev->stats.tx_bytes += len;
+		return NETDEV_TX_BUSY;
 	}
-
 	return NETDEV_TX_OK;
 }
 
@@ -375,7 +372,21 @@ static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
 		}
 	}
 	if (status & SNULL_TX_INTR) {
-		dev_kfree_skb(s->skb);
+		struct sk_buff *skb;
+		int datalen;
+
+		spin_lock(&s->lock);
+		datalen = s->datalen;
+		s->datalen = 0;
+		skb = s->skb;
+		s->skb = NULL;
+		spin_unlock(&s->lock);
+		if (skb)
+			dev_kfree_skb(skb);
+		if (datalen) {
+			dev->stats.tx_packets++;
+			dev->stats.tx_bytes += datalen;
+		}
 	}
 
 	if (err)
