@@ -13,7 +13,7 @@
 /* sn0 and sn1 */
 static struct net_device *netdevs[2];
 
-static struct net_device *get_pair(const struct net_device *dev)
+static struct net_device *dest_dev(const struct net_device *dev)
 {
 	return dev == netdevs[0] ? netdevs[1] : netdevs[0];
 }
@@ -182,7 +182,7 @@ static int snull_hw_tx(char *data, int len, struct net_device *dev)
 	memcpy(b->data, data, len);
 
 	/* put it in the destination RX queue, and trigger the interrupt */
-	dst = get_pair(dev);
+	dst = dest_dev(dev);
 	enqueue_rx(dst, b);
 	snull_interrupt(dst, SNULL_RX_INTR);
 
@@ -243,7 +243,7 @@ static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
 		if (pkt) {
 			err = snull_rx(dev, pkt);
 			/* queue it back to the source dev pool */
-			enqueue_pool(get_pair(dev), pkt);
+			enqueue_pool(dest_dev(dev), pkt);
 		}
 	}
 	if (status & SNULL_TX_INTR) {
