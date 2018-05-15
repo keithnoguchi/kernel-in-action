@@ -24,6 +24,11 @@ static int sysfs_open_test(int *i)
 			.flags = O_RDWR,
 		},
 		{
+			.name = "/sys/module/snull/parameters/tx_timeout file",
+			.file_name = "/sys/module/snull/parameters/tx_timeout",
+			.flags = O_RDWR,
+		},
+		{
 			.name = "/sys/devices/virtual/net/sn0/ifindex file",
 			.file_name = "/sys/devices/virtual/net/sn0/ifindex",
 			.flags = O_RDONLY,

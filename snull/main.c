@@ -10,9 +10,13 @@
 #include <linux/etherdevice.h>
 #include <linux/ip.h>
 
+#define SNULL_TX_DEFAULT_TIMEOUT_SEC		10
+
 /* device lockup parameters */
 static int tx_lockup = 0;
+static int tx_timeout = SNULL_TX_DEFAULT_TIMEOUT_SEC;
 module_param(tx_lockup, int, S_IRUGO|S_IWUSR);
+module_param(tx_timeout, int, S_IRUGO|S_IWUSR);
 
 /* sn0 and sn1 */
 static struct net_device *netdevs[2];
@@ -34,8 +38,9 @@ struct snull_buff {
 struct snull_dev {
 	spinlock_t		lock;
 	int			status;
-#define SNULL_TX_INTR		(1 << 0)
-#define SNULL_RX_INTR		(1 << 1)
+#define SNULL_RX_INTR		(1 << 0)
+#define SNULL_TX_INTR		(1 << 1)
+#define SNULL_TX_TIMEOUT	(1 << 2)
 	struct sk_buff		*skb;		/* inflight TX skb */
 	int			datalen;	/* inflight TX data len */
 	struct snull_buff	*pool;
@@ -53,6 +58,18 @@ static inline int snull_tx_lockup(void)
 	kernel_param_unlock(THIS_MODULE);
 
 	return val;
+}
+
+static inline int snull_tx_timeout_tick(void)
+{
+	int val;
+
+	/* lock is required, as in linux/moduleparam.h */
+	kernel_param_lock(THIS_MODULE);
+	val = tx_timeout;
+	kernel_param_unlock(THIS_MODULE);
+
+	return val*HZ;
 }
 
 static int init_pool(struct net_device *dev)
@@ -232,6 +249,7 @@ static int snull_open(struct net_device *dev)
 	memcpy(dev->dev_addr, "\0SNUL0", ETH_ALEN);
 	if (dev == netdevs[1])
 		dev->dev_addr[ETH_ALEN-1]++;
+	dev->watchdog_timeo = snull_tx_timeout_tick();
 	netif_start_queue(dev);
 	return 0;
 }
@@ -279,6 +297,7 @@ static netdev_tx_t snull_tx(struct sk_buff *skb, struct net_device *dev)
 static void snull_tx_timeout(struct net_device *dev)
 {
 	netdev_info(dev, "%s\n", __FUNCTION__);
+	snull_interrupt(dev, SNULL_TX_INTR|SNULL_TX_TIMEOUT);
 }
 
 const static struct net_device_ops snull_ops = {
@@ -386,6 +405,10 @@ static irqreturn_t snull_regular_interrupt(int irq, void *dev_id,
 		if (datalen) {
 			dev->stats.tx_packets++;
 			dev->stats.tx_bytes += datalen;
+		}
+		if (status & SNULL_TX_TIMEOUT) {
+			dev->stats.tx_dropped++;
+			netif_wake_queue(dev);
 		}
 	}
 
