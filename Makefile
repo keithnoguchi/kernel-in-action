@@ -5,6 +5,7 @@ obj-m += hello/
 obj-m += scull/
 obj-m += sleepy/
 obj-m += scullp/
+obj-m += scullc/
 obj-m += ldd/
 obj-m += sculld/
 obj-m += currenttime/
