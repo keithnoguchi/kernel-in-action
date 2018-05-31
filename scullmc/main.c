@@ -18,7 +18,7 @@ static const char *driver_name = SCULLMC_DRIVER_NAME;
 static int quantum_size = SCULLMC_DEFAULT_QUANTUM_SIZE;
 module_param(quantum_size, int, S_IRUGO);
 
-/* driver */
+/* scullmc driver */
 static struct scullmc_driver {
 	dev_t			devt_base;
 	struct kmem_cache	*quantumc;
@@ -27,16 +27,16 @@ static struct scullmc_driver {
 	.drv.module = THIS_MODULE,
 };
 
-/* devices */
+/* scullmc devices */
 static struct scullmc_device {
 	struct cdev		cdev;
 	struct ldd_device	dev;
-} scullmc_devices[] = {
+} devices[] = {
 	{ .dev.name = SCULLMC_DRIVER_NAME "0" },
 	{ .dev.name = SCULLMC_DRIVER_NAME "1" },
 	{ .dev.name = SCULLMC_DRIVER_NAME "2" },
 	{ .dev.name = SCULLMC_DRIVER_NAME "3" },
-	{ /* sentry */ },
+	{ /* sentinel */ },
 };
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
@@ -115,8 +115,7 @@ static int __init init(void)
 	if (!driver.quantumc)
 		return -ENOMEM;
 
-	err = alloc_chrdev_region(&driver.devt_base, 0,
-				  ARRAY_SIZE(scullmc_devices),
+	err = alloc_chrdev_region(&driver.devt_base, 0, ARRAY_SIZE(devices),
 				  SCULLMC_DRIVER_NAME);
 	if (err)
 		goto destroy_cache;
@@ -127,7 +126,7 @@ static int __init init(void)
 	if (err)
 		goto unregister_chrdev;
 
-	for (i = 0, d = scullmc_devices; d->dev.name; i++, d++) {
+	for (i = 0, d = devices; d->dev.name; i++, d++) {
 		dev_t devt = MKDEV(MAJOR(driver.devt_base),
 				   MINOR(driver.devt_base)+i);
 		err = register_device(d, devt);
@@ -137,12 +136,11 @@ static int __init init(void)
 
 	return 0;
 unregister:
-	for (del = scullmc_devices; del != d; del++)
+	for (del = devices; del != d; del++)
 		unregister_device(del);
 	unregister_ldd_driver(&driver.drv);
 unregister_chrdev:
-	unregister_chrdev_region(driver.devt_base,
-				 ARRAY_SIZE(scullmc_devices));
+	unregister_chrdev_region(driver.devt_base, ARRAY_SIZE(devices));
 destroy_cache:
 	if (driver.quantumc)
 		kmem_cache_destroy(driver.quantumc);
@@ -156,11 +154,10 @@ static void __exit cleanup(void)
 
 	pr_info("%s\n", __FUNCTION__);
 
-	for (d = scullmc_devices; d->dev.name; d++)
+	for (d = devices; d->dev.name; d++)
 		unregister_device(d);
 	unregister_ldd_driver(&driver.drv);
-	unregister_chrdev_region(driver.devt_base,
-				 ARRAY_SIZE(scullmc_devices));
+	unregister_chrdev_region(driver.devt_base, ARRAY_SIZE(devices));
 	if (driver.quantumc)
 		kmem_cache_destroy(driver.quantumc);
 }
