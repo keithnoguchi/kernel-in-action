@@ -67,7 +67,7 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
-static int register_scullmc_device(struct scullmc_device *d, dev_t devt)
+static int register_device(struct scullmc_device *d, dev_t devt)
 {
 	int err;
 
@@ -86,7 +86,7 @@ static int register_scullmc_device(struct scullmc_device *d, dev_t devt)
 	return err;
 }
 
-static void unregister_scullmc_device(struct scullmc_device *d)
+static void unregister_device(struct scullmc_device *d)
 {
 	cdev_del(&d->cdev);
 	unregister_ldd_device(&d->dev);
@@ -120,7 +120,7 @@ static int __init init(void)
 	for (i = 0, d = scullmc_devices; d->dev.name; i++, d++) {
 		dev_t devt = MKDEV(MAJOR(scullmc_driver.devt_base),
 				   MINOR(scullmc_driver.devt_base)+i);
-		err = register_scullmc_device(d, devt);
+		err = register_device(d, devt);
 		if (err)
 			goto unregister;
 	}
@@ -128,7 +128,7 @@ static int __init init(void)
 	return 0;
 unregister:
 	for (del = scullmc_devices; del != d; del++)
-		unregister_scullmc_device(del);
+		unregister_device(del);
 	unregister_ldd_driver(&scullmc_driver.drv);
 unregister_chrdev:
 	unregister_chrdev_region(scullmc_driver.devt_base,
@@ -147,7 +147,7 @@ static void __exit cleanup(void)
 	pr_info("%s\n", __FUNCTION__);
 
 	for (d = scullmc_devices; d->dev.name; d++)
-		unregister_scullmc_device(d);
+		unregister_device(d);
 	unregister_ldd_driver(&scullmc_driver.drv);
 	unregister_chrdev_region(scullmc_driver.devt_base,
 				 ARRAY_SIZE(scullmc_devices));

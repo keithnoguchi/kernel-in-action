@@ -40,7 +40,7 @@ static int test_devfs(int *i)
 		int err;
 		int fd;
 
-		printf("%3d) %-12s %-55s", ++(*i), __FUNCTION__, t->name);
+		printf("%3d) %-12s: %-55s", ++(*i), __FUNCTION__, t->name);
 
 		fd = open(t->devname, O_RDONLY);
 		if (fd == -1) {
