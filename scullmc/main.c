@@ -4,13 +4,12 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/slab.h>
-#include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
 
 #include "../ldd/ldd.h"
 
-#define SCULLMC_DRIVER_VERSION		"1.2"
+#define SCULLMC_DRIVER_VERSION		"1.3"
 #define SCULLMC_DRIVER_NAME		"scullmc"
 #define SCULLMC_DEFAULT_QUANTUM_SIZE	PAGE_SIZE
 
@@ -72,11 +71,13 @@ static int register_scullmc_device(struct scullmc_device *d, dev_t devt)
 {
 	int err;
 
+	/* add /dev/scullmc[0-4] */
+	d->dev.dev.devt = devt;
 	err = register_ldd_device(&d->dev);
 	if (err)
 		return err;
 
-	/* add /dev/scullmc[0-4] */
+	/* cdev subsystem */
 	cdev_init(&d->cdev, &fops);
 	err = cdev_add(&d->cdev, devt, 1);
 	if (err)

@@ -17,6 +17,11 @@ static int sysfs_test(int *i)
 		const char	*want;
 	} tests[] = {
 		{
+			.name		= "/sys/bus/ldd/drivers/scullmc/version version",
+			.file_name	= "/sys/bus/ldd/drivers/scullmc/version",
+			.want		= "1.3",
+		},
+		{
 			.name		= "/sys/bus/ldd/devices/scullmc0/uevent read",
 			.file_name	= "/sys/bus/ldd/devices/scullmc0/uevent",
 			.flags		= O_RDONLY,
@@ -35,11 +40,6 @@ static int sysfs_test(int *i)
 			.name		= "/sys/bus/ldd/devices/scullmc3/uevent read",
 			.file_name	= "/sys/bus/ldd/devices/scullmc3/uevent",
 			.flags		= O_RDONLY,
-		},
-		{
-			.name		= "/sys/bus/ldd/drivers/scullmc/version version",
-			.file_name	= "/sys/bus/ldd/drivers/scullmc/version",
-			.want		= "1.2",
 		},
 		{ /* sentinel */ },
 	};
