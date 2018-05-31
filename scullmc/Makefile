@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
-obj-m += scullc.o
-scullc-objs := main.o
+obj-m += scullmc.o
+scullmc-objs := main.o
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 all default: modules
 install: modules_install

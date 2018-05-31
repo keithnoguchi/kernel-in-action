@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
-TEST_GEN_PROGS := scullc_sysfs_test
+TEST_GEN_PROGS := scullmc_sysfs_test
 include $(KERNDIR)/tools/testing/selftests/lib.mk

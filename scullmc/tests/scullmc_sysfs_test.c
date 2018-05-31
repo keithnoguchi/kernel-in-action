@@ -16,23 +16,23 @@ static int sysfs_test(int *i)
 		int		flags;
 	} tests[] = {
 		{
-			.name		= "/sys/bus/ldd/devices/scullc0/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullc0/uevent",
+			.name		= "/sys/bus/ldd/devices/scullmc0/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullmc0/uevent",
 			.flags		= O_RDONLY,
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullc1/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullc1/uevent",
+			.name		= "/sys/bus/ldd/devices/scullmc1/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullmc1/uevent",
 			.flags		= O_RDONLY,
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullc2/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullc2/uevent",
+			.name		= "/sys/bus/ldd/devices/scullmc2/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullmc2/uevent",
 			.flags		= O_RDONLY,
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullc3/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullc3/uevent",
+			.name		= "/sys/bus/ldd/devices/scullmc3/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullmc3/uevent",
 			.flags		= O_RDONLY,
 		},
 		{ /* sentinel */ },
