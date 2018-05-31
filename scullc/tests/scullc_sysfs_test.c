@@ -10,7 +10,63 @@
 
 static int sysfs_test(int *i)
 {
-	return 0;
+	const struct test {
+		const char	*name;
+		const char	*file_name;
+		int		flags;
+	} tests[] = {
+		{
+			.name		= "/sys/bus/ldd/devices/scullc0/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullc0/uevent",
+			.flags		= O_RDONLY,
+		},
+		{
+			.name		= "/sys/bus/ldd/devices/scullc1/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullc1/uevent",
+			.flags		= O_RDONLY,
+		},
+		{
+			.name		= "/sys/bus/ldd/devices/scullc2/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullc2/uevent",
+			.flags		= O_RDONLY,
+		},
+		{
+			.name		= "/sys/bus/ldd/devices/scullc3/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullc3/uevent",
+			.flags		= O_RDONLY,
+		},
+		{ /* sentinel */ },
+	};
+	const struct test *t;
+	int fail = 0;
+
+	for (t = tests; t->name; t++) {
+		char buf[1024];
+		int err;
+		int fd;
+
+		printf("%3d) %-12s: %-55s", ++(*i), __FUNCTION__, t->name);
+
+		fd = open(t->file_name, t->flags);
+		if (fd == -1) {
+			puts("FAIL: open()");
+			ksft_inc_fail_cnt();
+			fail++;
+			continue;
+		}
+		err = read(fd, buf, sizeof(buf));
+		if (err == -1) {
+			puts("FAIL: read()");
+			ksft_inc_fail_cnt();
+			fail++;
+			goto close;
+		}
+		puts("PASS");
+		ksft_inc_pass_cnt();
+close:
+		close(fd);
+	}
+	return fail;
 }
 
 int main(void)
