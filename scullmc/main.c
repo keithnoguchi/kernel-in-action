@@ -77,19 +77,17 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
-static int register_device(struct scullmc_device *d, dev_t devt)
+static int register_device(struct scullmc_device *d)
 {
 	int err;
 
-	/* add /dev/scullmc[0-4] */
-	d->ldd.dev.devt = devt;
 	err = register_ldd_device(&d->ldd);
 	if (err)
 		return err;
 
-	/* cdev subsystem */
+	/* for cdev subsystem */
 	cdev_init(&d->cdev, &fops);
-	err = cdev_add(&d->cdev, devt, 1);
+	err = cdev_add(&d->cdev, d->ldd.dev.devt, 1);
 	if (err)
 		unregister_ldd_device(&d->ldd);
 
@@ -127,9 +125,10 @@ static int __init init(void)
 		goto unregister_chrdev;
 
 	for (i = 0, d = devices; d->ldd.name; i++, d++) {
-		dev_t devt = MKDEV(MAJOR(driver.devt_base),
-				   MINOR(driver.devt_base)+i);
-		err = register_device(d, devt);
+		/* for /dev/scullmcX file */
+		d->ldd.dev.devt = MKDEV(MAJOR(driver.devt_base),
+					MINOR(driver.devt_base)+i);
+		err = register_device(d);
 		if (err)
 			goto unregister;
 	}
