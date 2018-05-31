@@ -14,6 +14,7 @@ static int sysfs_test(int *i)
 		const char	*name;
 		const char	*file_name;
 		int		flags;
+		const char	*want;
 	} tests[] = {
 		{
 			.name		= "/sys/bus/ldd/devices/scullmc0/uevent read",
@@ -35,6 +36,11 @@ static int sysfs_test(int *i)
 			.file_name	= "/sys/bus/ldd/devices/scullmc3/uevent",
 			.flags		= O_RDONLY,
 		},
+		{
+			.name		= "/sys/bus/ldd/drivers/scullmc/version version",
+			.file_name	= "/sys/bus/ldd/drivers/scullmc/version",
+			.want		= "1.2",
+		},
 		{ /* sentinel */ },
 	};
 	const struct test *t;
@@ -42,6 +48,7 @@ static int sysfs_test(int *i)
 
 	for (t = tests; t->name; t++) {
 		char buf[1024];
+		char *nl;
 		int err;
 		int fd;
 
@@ -57,6 +64,15 @@ static int sysfs_test(int *i)
 		err = read(fd, buf, sizeof(buf));
 		if (err == -1) {
 			puts("FAIL: read()");
+			ksft_inc_fail_cnt();
+			fail++;
+			goto close;
+		}
+		nl = strchr(buf, '\n');
+		if (nl)
+			*nl = '\0';
+		if (t->want && strcmp(buf, t->want)) {
+			printf("FAIL: got='%s', want='%s'\n", buf, t->want);
 			ksft_inc_fail_cnt();
 			fail++;
 			goto close;

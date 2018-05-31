@@ -10,7 +10,7 @@
 
 #include "../ldd/ldd.h"
 
-#define SCULLMC_DRIVER_VERSION		"1.0"
+#define SCULLMC_DRIVER_VERSION		"1.2"
 #define SCULLMC_DRIVER_NAME		"scullmc"
 #define SCULLMC_DEFAULT_QUANTUM_SIZE	PAGE_SIZE
 
@@ -19,13 +19,16 @@ static const char *driver_name = SCULLMC_DRIVER_NAME;
 static int quantum_size = SCULLMC_DEFAULT_QUANTUM_SIZE;
 module_param(quantum_size, int, S_IRUGO);
 
-static struct ldd_driver scullmc_driver = {
-	.module = THIS_MODULE,
+static struct scullmc_driver {
+	dev_t			devt_base;
+	struct ldd_driver	drv;
+} scullmc_driver = {
+	.drv.module = THIS_MODULE,
 };
 
 static struct scullmc_device {
-	struct ldd_device	dev;
 	struct cdev		cdev;
+	struct ldd_device	dev;
 } scullmc_devices[] = {
 	{ .dev.name = SCULLMC_DRIVER_NAME "0" },
 	{ .dev.name = SCULLMC_DRIVER_NAME "1" },
@@ -65,10 +68,34 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
+static int register_scullmc_device(struct scullmc_device *d, dev_t devt)
+{
+	int err;
+
+	err = register_ldd_device(&d->dev);
+	if (err)
+		return err;
+
+	/* add /dev/scullmc[0-4] */
+	cdev_init(&d->cdev, &fops);
+	err = cdev_add(&d->cdev, devt, 1);
+	if (err)
+		unregister_ldd_device(&d->dev);
+
+	return err;
+}
+
+static void unregister_scullmc_device(struct scullmc_device *d)
+{
+	cdev_del(&d->cdev);
+	unregister_ldd_device(&d->dev);
+}
+
 static int __init init(void)
 {
 	struct scullmc_device *d, *del;
 	int err;
+	int i;
 
 	pr_info("%s\n", __FUNCTION__);
 
@@ -77,23 +104,34 @@ static int __init init(void)
 	if (!quantum_cache)
 		return -ENOMEM;
 
-	scullmc_driver.version = driver_version;
-	scullmc_driver.driver.name = driver_name;
-	err = register_ldd_driver(&scullmc_driver);
+	err = alloc_chrdev_region(&scullmc_driver.devt_base, 0,
+				  ARRAY_SIZE(scullmc_devices),
+				  SCULLMC_DRIVER_NAME);
 	if (err)
 		goto destroy_cache;
 
-	for (d = scullmc_devices; d->dev.name; d++) {
-		cdev_init(&d->cdev, &fops);
-		err = register_ldd_device(&d->dev);
+	scullmc_driver.drv.version = driver_version;
+	scullmc_driver.drv.driver.name = driver_name;
+	err = register_ldd_driver(&scullmc_driver.drv);
+	if (err)
+		goto unregister_chrdev;
+
+	for (i = 0, d = scullmc_devices; d->dev.name; i++, d++) {
+		dev_t devt = MKDEV(MAJOR(scullmc_driver.devt_base),
+				   MINOR(scullmc_driver.devt_base)+i);
+		err = register_scullmc_device(d, devt);
 		if (err)
 			goto unregister;
 	}
+
 	return 0;
 unregister:
 	for (del = scullmc_devices; del != d; del++)
-		unregister_ldd_device(&del->dev);
-	unregister_ldd_driver(&scullmc_driver);
+		unregister_scullmc_device(del);
+	unregister_ldd_driver(&scullmc_driver.drv);
+unregister_chrdev:
+	unregister_chrdev_region(scullmc_driver.devt_base,
+				 ARRAY_SIZE(scullmc_devices));
 destroy_cache:
 	if (quantum_cache)
 		kmem_cache_destroy(quantum_cache);
@@ -108,8 +146,10 @@ static void __exit cleanup(void)
 	pr_info("%s\n", __FUNCTION__);
 
 	for (d = scullmc_devices; d->dev.name; d++)
-		unregister_ldd_device(&d->dev);
-	unregister_ldd_driver(&scullmc_driver);
+		unregister_scullmc_device(d);
+	unregister_ldd_driver(&scullmc_driver.drv);
+	unregister_chrdev_region(scullmc_driver.devt_base,
+				 ARRAY_SIZE(scullmc_devices));
 	if (quantum_cache)
 		kmem_cache_destroy(quantum_cache);
 }
