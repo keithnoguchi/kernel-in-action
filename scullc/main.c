@@ -32,7 +32,7 @@ static struct ldd_device scullc_devices[] = {
 /* kmem cache */
 static struct kmem_cache *quantum_cache;
 
-static int __init scullc_init_module(void)
+static int __init init(void)
 {
 	struct ldd_device *d, *del;
 	int err;
@@ -65,9 +65,9 @@ destroy_cache:
 		kmem_cache_destroy(quantum_cache);
 	return err;
 }
-module_init(scullc_init_module);
+module_init(init);
 
-static void __exit scullc_exit_module(void)
+static void __exit cleanup(void)
 {
 	struct ldd_device *d;
 
@@ -79,7 +79,7 @@ static void __exit scullc_exit_module(void)
 	if (quantum_cache)
 		kmem_cache_destroy(quantum_cache);
 }
-module_exit(scullc_exit_module);
+module_exit(cleanup);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
