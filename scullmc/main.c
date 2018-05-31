@@ -41,25 +41,31 @@ static struct scullmc_device {
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
-	pr_info("%s\n", __FUNCTION__);
+	struct scullmc_device *d = f->private_data;
+	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->dev));
 	return 0;
 }
 
 static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *pos)
 {
-	pr_info("%s\n", __FUNCTION__);
+	struct scullmc_device *d = f->private_data;
+	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->dev));
 	return 0;
 }
 
 static int open(struct inode *i, struct file *f)
 {
-	pr_info("%s\n", __FUNCTION__);
+	struct scullmc_device *d = container_of(i->i_cdev, struct scullmc_device, cdev);
+	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->dev));
+	f->private_data = d;
 	return 0;
 }
 
 static int release(struct inode *i, struct file *f)
 {
-	pr_info("%s\n", __FUNCTION__);
+	struct scullmc_device *d = f->private_data;
+	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->dev));
+	f->private_data = NULL;
 	return 0;
 }
 

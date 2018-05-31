@@ -20,6 +20,10 @@ struct ldd_driver {
 };
 #define to_ldd_driver(_drv)	container_of(_drv, struct ldd_driver, driver)
 
+static inline const char *ldd_dev_name(const struct ldd_device *dev)
+{
+	return dev_name(&dev->dev);
+}
 int register_ldd_device(struct ldd_device *dev);
 void unregister_ldd_device(struct ldd_device *dev);
 int register_ldd_driver(struct ldd_driver *drv);
