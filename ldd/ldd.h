@@ -6,7 +6,6 @@
 /* ldd device */
 struct ldd_device {
 	const char		*name;
-	struct ldd_driver	*driver;
 	struct device		dev;
 };
 #define to_ldd_device(_dev)	container_of(_dev, struct lddd_device, dev)

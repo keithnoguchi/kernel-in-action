@@ -21,6 +21,12 @@ static int test_procfs(int *i)
 			.filename	= "/proc/devices",
 			.needle		= "scullmc",
 		},
+		{
+			.name		= "find scullmc_qset in /proc/slabinfo",
+			.filename	= "/proc/slabinfo",
+			.needle		= "scullmc_qset",
+		},
+		{ /* sentinel */ },
 	};
 	const struct test *t;
 	int fail = 0;
@@ -45,7 +51,7 @@ static int test_procfs(int *i)
 		buf[err] = '\0';
 		find = strstr(buf, t->needle);
 		if (!find) {
-			puts("FAIL: strcasestr()\n"); 
+			printf("FAIL: strcstr(%s, %s)\n", buf, t->needle);
 			goto close_fail;
 		}
 		close(fd);
