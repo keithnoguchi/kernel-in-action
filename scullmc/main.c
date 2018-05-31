@@ -41,21 +41,25 @@ static struct kmem_cache *quantum_cache;
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
+	pr_info("%s\n", __FUNCTION__);
 	return 0;
 }
 
 static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *pos)
 {
+	pr_info("%s\n", __FUNCTION__);
 	return 0;
 }
 
 static int open(struct inode *i, struct file *f)
 {
+	pr_info("%s\n", __FUNCTION__);
 	return 0;
 }
 
 static int release(struct inode *i, struct file *f)
 {
+	pr_info("%s\n", __FUNCTION__);
 	return 0;
 }
 
