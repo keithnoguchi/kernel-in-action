@@ -13,6 +13,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Scullp](#scullp)
   - [Ldd](#ldd)
   - [Sculld](#sculld)
+  - [Scullmc](#scullmc)
   - [/proc/currenttime](#currenttime)
   - [Snull](#snull)
 - [Test](#test)
@@ -419,6 +420,12 @@ air1$ tree /sys/bus/ldd
 air1$
 ```
 
+### Scullmc
+
+[scullmc] is a memory cache example, explained in [LDD Chapter 8]:
+
+[scullmc]: scullmc/main.c
+
 ### currenttime
 
 [currenttime] is a module to dump the kernel internal variables, `jiffies`,
@@ -786,6 +793,7 @@ total 8
 [LDD Chapter 3]:  https://lwn.net/images/pdf/LDD3/ch03.pdf
 [LDD Chapter 5]:  https://lwn.net/images/pdf/LDD3/ch05.pdf
 [LDD Chapter 7]:  https://lwn.net/images/pdf/LDD3/ch07.pdf
+[LDD Chapter 8]:  https://lwn.net/images/pdf/LDD3/ch08.pdf
 [LDD Chapter 14]: https://lwn.net/images/pdf/LDD3/ch14.pdf
 [LDD Chapter 16]: https://lwn.net/images/pdf/LDD3/ch16.pdf
 [Robert Love]: https://rlove.org/
