@@ -334,18 +334,56 @@ static void unregister_driver_attr(struct scullcm_driver *drv)
 
 static int register_driver(struct scullcm_driver *drv)
 {
-	int err;
+	int err = -ENOMEM;
+
+	/* quantum set cache */
+	drv->qsetc = kmem_cache_create("scullcm_qset", sizeof(struct qset),
+				       0, SLAB_HWCACHE_ALIGN, NULL);
+	if (!drv->qsetc)
+		goto destroy_caches;
+
+	/* quantum vector cache */
+	drv->qvec_nr = quantum_vector_number;
+	drv->qvecc = kmem_cache_create("scullcm_quantum_vector",
+				       sizeof(void *)*drv->qvec_nr,
+				       0, SLAB_HWCACHE_ALIGN, NULL);
+	if (!drv->qvecc)
+		goto destroy_caches;
+
+	/* quantum cache */
+	drv->qsize = quantum_size;
+	drv->quantumc = kmem_cache_create("scullcm_quantum", drv->qsize,
+					    0, SLAB_HWCACHE_ALIGN, NULL);
+	if (!drv->quantumc)
+		goto destroy_caches;
+
+	err = alloc_chrdev_region(&drv->devt_base, 0, ARRAY_SIZE(devices),
+				  SCULLCM_DRIVER_NAME);
+	if (err)
+		goto destroy_caches;
 
 	drv->ldd.version = driver_version;
 	drv->ldd.driver.name = driver_name;
 	err = register_ldd_driver(&drv->ldd);
 	if (err)
-		return err;
+		goto unregister_chrdev_region;
 
 	err = register_driver_attr(drv);
 	if (err)
-		unregister_ldd_driver(&drv->ldd);
+		goto unregister_driver;
 
+	return err;
+unregister_driver:
+	unregister_ldd_driver(&drv->ldd);
+unregister_chrdev_region:
+	unregister_chrdev_region(scullcm.devt_base, ARRAY_SIZE(devices));
+destroy_caches:
+	if (drv->quantumc)
+		kmem_cache_destroy(drv->quantumc);
+	if (drv->qvecc)
+		kmem_cache_destroy(drv->qvecc);
+	if (drv->qsetc)
+		kmem_cache_destroy(drv->qsetc);
 	return err;
 }
 
@@ -353,45 +391,26 @@ static void unregister_driver(struct scullcm_driver *drv)
 {
 	unregister_driver_attr(drv);
 	unregister_ldd_driver(&drv->ldd);
+	unregister_chrdev_region(drv->devt_base, ARRAY_SIZE(devices));
+	if (drv->quantumc)
+		kmem_cache_destroy(drv->quantumc);
+	if (drv->qvecc)
+		kmem_cache_destroy(drv->qvecc);
+	if (drv->qsetc)
+		kmem_cache_destroy(drv->qsetc);
 }
 
 static int __init init(void)
 {
 	struct scullcm_device *d, *del;
-	int err = -ENOMEM;
+	int err;
 	int i;
 
 	pr_info("%s\n", __FUNCTION__);
 
-	/* quantum set cache */
-	scullcm.qsetc = kmem_cache_create("scullcm_qset", sizeof(struct qset),
-					  0, SLAB_HWCACHE_ALIGN, NULL);
-	if (!scullcm.qsetc)
-		goto destroy_caches;
-
-	/* quantum vector cache */
-	scullcm.qvec_nr = quantum_vector_number;
-	scullcm.qvecc = kmem_cache_create("scullcm_quantum_vector",
-					  sizeof(void *)*scullcm.qvec_nr,
-					  0, SLAB_HWCACHE_ALIGN, NULL);
-	if (!scullcm.qvecc)
-		goto destroy_caches;
-
-	/* quantum cache */
-	scullcm.qsize = quantum_size;
-	scullcm.quantumc = kmem_cache_create("scullcm_quantum", scullcm.qsize,
-					    0, SLAB_HWCACHE_ALIGN, NULL);
-	if (!scullcm.quantumc)
-		goto destroy_caches;
-
-	err = alloc_chrdev_region(&scullcm.devt_base, 0, ARRAY_SIZE(devices),
-				  SCULLCM_DRIVER_NAME);
-	if (err)
-		goto destroy_caches;
-
 	err = register_driver(&scullcm);
 	if (err)
-		goto unregister_chrdev;
+		return err;
 
 	for (i = 0, d = devices; d->ldd.name; i++, d++) {
 		/* for /dev/scullcmX file */
@@ -401,21 +420,11 @@ static int __init init(void)
 		if (err)
 			goto unregister;
 	}
-
-	return 0;
+	return err;
 unregister:
 	for (del = devices; del != d; del++)
 		unregister_device(del);
 	unregister_driver(&scullcm);
-unregister_chrdev:
-	unregister_chrdev_region(scullcm.devt_base, ARRAY_SIZE(devices));
-destroy_caches:
-	if (scullcm.quantumc)
-		kmem_cache_destroy(scullcm.quantumc);
-	if (scullcm.qvecc)
-		kmem_cache_destroy(scullcm.qvecc);
-	if (scullcm.qsetc)
-		kmem_cache_destroy(scullcm.qsetc);
 	return err;
 }
 module_init(init);
@@ -429,13 +438,6 @@ static void __exit cleanup(void)
 	for (d = devices; d->ldd.name; d++)
 		unregister_device(d);
 	unregister_driver(&scullcm);
-	unregister_chrdev_region(scullcm.devt_base, ARRAY_SIZE(devices));
-	if (scullcm.quantumc)
-		kmem_cache_destroy(scullcm.quantumc);
-	if (scullcm.qvecc)
-		kmem_cache_destroy(scullcm.qvecc);
-	if (scullcm.qsetc)
-		kmem_cache_destroy(scullcm.qsetc);
 }
 module_exit(cleanup);
 
