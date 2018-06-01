@@ -175,13 +175,13 @@ static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *p
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
-	/* no multi qsets support */
-	if (*pos > drv->qvec_nr*drv->qsize)
-		return -EINVAL;
-
 	/* find the quantum */
 	s_pos = *pos/drv->qsize;
 	q_pos = *pos%drv->qsize;
+
+	/* no multi qsets support */
+	if (s_pos >= drv->qvec_nr)
+		return -EINVAL;
 
 	/* no multi quantum write */
 	if (q_pos+n > drv->qsize)

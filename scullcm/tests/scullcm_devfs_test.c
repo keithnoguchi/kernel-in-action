@@ -152,12 +152,6 @@ static int test_devfs(int *i)
 			.writen		= 32768,
 			.readn		= 32768,
 		},
-		{
-			.name		= "/dev/scullcm0 36864 bytes write & read",
-			.devname	= "/dev/scullcm0",
-			.writen		= 36864,
-			.readn		= 36864,
-		},
 		{ /* sentry */ },
 	};
 	const struct test *t;
