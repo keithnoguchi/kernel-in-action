@@ -128,6 +128,30 @@ static int test_devfs(int *i)
 			.writen		= 4096,
 			.readn		= 4096,
 		},
+		{
+			.name		= "/dev/scullcm0 32768 bytes write & read",
+			.devname	= "/dev/scullcm0",
+			.writen		= 32768,
+			.readn		= 32768,
+		},
+		{
+			.name		= "/dev/scullcm1 32768 bytes write & read",
+			.devname	= "/dev/scullcm1",
+			.writen		= 32768,
+			.readn		= 32768,
+		},
+		{
+			.name		= "/dev/scullcm2 32768 bytes write & read",
+			.devname	= "/dev/scullcm2",
+			.writen		= 32768,
+			.readn		= 32768,
+		},
+		{
+			.name		= "/dev/scullcm3 32768 bytes write & read",
+			.devname	= "/dev/scullcm3",
+			.writen		= 32768,
+			.readn		= 32768,
+		},
 		{ /* sentry */ },
 	};
 	const struct test *t;
@@ -147,18 +171,26 @@ static int test_devfs(int *i)
 			goto fail;
 		}
 		if (t->writen) {
+			int total;
 			int ret;
 
 			wbuf = malloc(t->writen);
 			memset(wbuf, 'w', t->writen);
-			ret = write(fd, wbuf, t->writen);
-			if (ret == -1) {
-				printf("FAIL: write(%d): %s\n",
-				       t->writen, strerror(errno));
-				goto fail_free_close;
+			/* multiple writes */
+			total = 0;
+			while (total < t->writen) {
+				ret = write(fd, wbuf+total, t->writen-total);
+				if (ret == -1) {
+					printf("FAIL: write(%d): %s\n",
+					       t->writen, strerror(errno));
+					goto fail_free_close;
+				}
+				if (!ret)
+					break;
+				total += ret;
 			}
-			if (ret != t->writen) {
-				printf("FAIL: %d=write(%d)\n", ret, t->writen);
+			if (total != t->writen) {
+				printf("FAIL: %d=write(%d)\n", total, t->writen);
 				goto fail_free_close;
 			}
 			if (t->sysfsname) {
