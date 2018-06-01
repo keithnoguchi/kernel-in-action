@@ -328,7 +328,7 @@ static const struct driver_attribute qvec_nr_attr = {
 };
 
 static const struct driver_attribute qsize_attr = {
-	.attr.name	= "qsize",
+	.attr.name	= "quantum_size",
 	.attr.mode	= S_IRUGO,
 	.show		= show_driver_qsize,
 };

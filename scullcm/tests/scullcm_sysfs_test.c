@@ -29,8 +29,8 @@ static int sysfs_test(int *i)
 			.want		= "8",
 		},
 		{
-			.name		= "/sys/bus/ldd/drivers/scullcm/qsize quantum size",
-			.file_name	= "/sys/bus/ldd/drivers/scullcm/qsize",
+			.name		= "/sys/bus/ldd/drivers/scullcm/quantum_size",
+			.file_name	= "/sys/bus/ldd/drivers/scullcm/quantum_size",
 			.flags		= O_RDONLY,
 			.want		= "4096",
 		},
