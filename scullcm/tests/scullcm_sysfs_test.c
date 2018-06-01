@@ -23,6 +23,12 @@ static int sysfs_test(int *i)
 			.want		= "1.3.4",
 		},
 		{
+			.name		= "/sys/bus/ldd/drivers/scullcm/quantum_vector_number",
+			.file_name	= "/sys/bus/ldd/drivers/scullcm/quantum_vector_number",
+			.flags		= O_RDONLY,
+			.want		= "8",
+		},
+		{
 			.name		= "/sys/bus/ldd/drivers/scullcm/qsize quantum size",
 			.file_name	= "/sys/bus/ldd/drivers/scullcm/qsize",
 			.flags		= O_RDONLY,

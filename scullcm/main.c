@@ -28,7 +28,6 @@ static struct scullcm_driver {
 	struct kmem_cache	*qvecc;
 	struct kmem_cache	*quantumc;
 	struct ldd_driver	ldd;
-	struct driver_attribute	qsize_attr;
 } scullcm = {
 	.ldd.module = THIS_MODULE,
 };
@@ -310,26 +309,47 @@ static void unregister_device(struct scullcm_device *d)
 	unregister_ldd_device(&d->ldd);
 }
 
+static ssize_t show_driver_qvec_nr(struct device_driver *drv, char *buf)
+{
+	struct scullcm_driver *s = to_scullcm_driver(drv);
+	return snprintf(buf, PAGE_SIZE, "%d\n", s->qvec_nr);
+}
+
 static ssize_t show_driver_qsize(struct device_driver *drv, char *buf)
 {
 	struct scullcm_driver *s = to_scullcm_driver(drv);
 	return snprintf(buf, PAGE_SIZE, "%ld\n", s->qsize);
 }
 
+static const struct driver_attribute qvec_nr_attr = {
+	.attr.name	= "quantum_vector_number",
+	.attr.mode	= S_IRUGO,
+	.show		= show_driver_qvec_nr,
+};
+
+static const struct driver_attribute qsize_attr = {
+	.attr.name	= "qsize",
+	.attr.mode	= S_IRUGO,
+	.show		= show_driver_qsize,
+};
+
 static int register_driver_attr(struct scullcm_driver *drv)
 {
-	const struct driver_attribute qsize_attr = {
-		.attr.name	= "qsize",
-		.attr.mode	= S_IRUGO,
-		.show		= show_driver_qsize,
-	};
-	drv->qsize_attr = qsize_attr;
-	return driver_create_file(&drv->ldd.driver, &drv->qsize_attr);
+	int err;
+
+	err = driver_create_file(&drv->ldd.driver, &qvec_nr_attr);
+	if (err)
+		return err;
+	err = driver_create_file(&drv->ldd.driver, &qsize_attr);
+	if (err)
+		driver_remove_file(&drv->ldd.driver, &qvec_nr_attr);
+	return err;
 }
 
 static void unregister_driver_attr(struct scullcm_driver *drv)
 {
-	driver_remove_file(&drv->ldd.driver, &drv->qsize_attr);
+	driver_remove_file(&drv->ldd.driver, &qvec_nr_attr);
+	driver_remove_file(&drv->ldd.driver, &qsize_attr);
 }
 
 static int register_driver(struct scullcm_driver *drv)
@@ -353,7 +373,7 @@ static int register_driver(struct scullcm_driver *drv)
 	/* quantum cache */
 	drv->qsize = quantum_size;
 	drv->quantumc = kmem_cache_create("scullcm_quantum", drv->qsize,
-					    0, SLAB_HWCACHE_ALIGN, NULL);
+					  0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!drv->quantumc)
 		goto destroy_caches;
 
