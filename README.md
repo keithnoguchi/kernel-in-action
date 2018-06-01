@@ -106,9 +106,9 @@ air1$
 
 ### Process status
 
-[ls.ko] module is a classic ls command, but implemented as a kernel module :)
+[ls] module is a classic ls command, but implemented as a kernel module :)
 
-[ls.ko]: ls/main.c
+[ls]: ls/main.c
 
 ```sh
 air1$ sudo modprobe ls
@@ -186,9 +186,9 @@ air1$
 
 ### Hello world
 
-[hello.ko] module is a classic hello world kernel thread module:
+[hello] module is a classic hello world kernel thread module:
 
-[hello.ko]: hello/main.c
+[hello]: hello/main.c
 
 ```sh
 air1$ sudo modprobe hello
@@ -206,9 +206,9 @@ air1$ sudo rmmod hello
 
 ### Scull
 
-[scull.ko] is a [LDD]'s simple character device, explained in [LDD Chapter 3].
+[scull] is a [LDD]'s simple character device, explained in [LDD Chapter 3].
 
-[scull.ko]: scull/main.c
+[scull]: scull/main.c
 
 ```sh
 air1$ sudo modprobe scull
@@ -248,10 +248,10 @@ air1$
 
 ### Sleepy
 
-[sleepy.ko] is a simple module to demonstrate the wait queue, as explained
+[sleepy] is a simple module to demonstrate the wait queue, as explained
 in [LDD Chapter 5].
 
-[sleepy.ko]: sleepy/main.c
+[sleepy]: sleepy/main.c
 
 ```sh
 air1$ sudo modprobe sleepy
@@ -295,12 +295,12 @@ the sleepy_write() method call.
 
 ### Scullp
 
-[scullp.ko] is a pipe version of the scull, which blocks both in read/write
+[scullp] is a pipe version of the scull, which blocks both in read/write
 while there is no enough data to read or enough space to write, as explained
 in [LDD Chapter 5].  This is a great example to show case kernel's
 [wait queue].
 
-[scullp.ko]: scullp/main.c
+[scullp]: scullp/main.c
 [wait queue]: https://github.com/torvalds/linux/blob/master/include/linux/wait.h
 
 First load the module:
