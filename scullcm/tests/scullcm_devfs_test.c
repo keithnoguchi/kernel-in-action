@@ -104,6 +104,30 @@ static int test_devfs(int *i)
 			.writen		= 1024,
 			.readn		= 1024,
 		},
+		{
+			.name		= "/dev/scullcm0 4096 bytes write & read",
+			.devname	= "/dev/scullcm0",
+			.writen		= 4096,
+			.readn		= 4096,
+		},
+		{
+			.name		= "/dev/scullcm1 4096 bytes write & read",
+			.devname	= "/dev/scullcm1",
+			.writen		= 4096,
+			.readn		= 4096,
+		},
+		{
+			.name		= "/dev/scullcm2 4096 bytes write & read",
+			.devname	= "/dev/scullcm2",
+			.writen		= 4096,
+			.readn		= 4096,
+		},
+		{
+			.name		= "/dev/scullcm3 4096 bytes write & read",
+			.devname	= "/dev/scullcm3",
+			.writen		= 4096,
+			.readn		= 4096,
+		},
 		{ /* sentry */ },
 	};
 	const struct test *t;
@@ -116,7 +140,8 @@ static int test_devfs(int *i)
 
 		printf("%3d) %-12s: %-55s", ++(*i), __FUNCTION__, t->name);
 
-		fd = open(t->devname, O_RDWR);
+		/* always starts with fresh */
+		fd = open(t->devname, O_WRONLY|O_TRUNC);
 		if (fd == -1) {
 			printf("FAIL: open(%s): %s\n", t->devname, strerror(errno));
 			goto fail;
@@ -141,22 +166,22 @@ static int test_devfs(int *i)
 				char *nl;
 				int got;
 				int ret;
-				int fd;
+				int sfd;
 
-				fd = open(t->sysfsname, O_RDONLY);
+				sfd = open(t->sysfsname, O_RDONLY);
 				if (fd == -1) {
 					printf("FAIL: open(%s): %s\n",
 					       t->sysfsname, strerror(errno));
 					goto fail_free_close;
 				}
-				ret = read(fd, buf, sizeof(buf));
+				ret = read(sfd, buf, sizeof(buf));
 				if (ret == -1) {
 					printf("FAIL: read(%s): %s\n",
 					       t->sysfsname, strerror(errno));
-					close(fd);
+					close(sfd);
 					goto fail_free_close;
 				}
-				close(fd);
+				close(sfd);
 				nl = strchr(buf, '\n');
 				if (nl)
 					*nl = '\0';
@@ -170,23 +195,32 @@ static int test_devfs(int *i)
 			if (t->readn) {
 				int total;
 				int ret;
+				int rfd;
 				int i;
 
+				rfd = open(t->devname, O_RDONLY);
+				if (rfd == -1) {
+					printf("FAIL: open(%s): %s\n", t->devname,
+					       strerror(errno));
+					goto fail_free_close;
+				}
 				rbuf = malloc(t->readn);
 				memset(rbuf, 'r', t->readn);
 				/* read all */
 				total = 0;
 				while (total < t->readn) {
-					ret = read(fd, rbuf+total, t->readn-total);
+					ret = read(rfd, rbuf+total, t->readn-total);
 					if (ret == -1) {
 						printf("FAIL: read(%d): %s\n",
 						       t->readn, strerror(errno));
+						close(rfd);
 						goto fail_free_close;
 					}
 					if (ret == 0)
 						break;
 					total += ret;
 				}
+				close(rfd);
 				if (total != t->readn) {
 					printf("FAIL: %d=read(%d)\n", total, t->readn);
 					goto fail_free_close;
