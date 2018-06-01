@@ -73,7 +73,7 @@ static struct qset *alloc_qset(struct scullcm_driver *drv)
 	s->data = kmem_cache_alloc(drv->qvecc, GFP_KERNEL);
 	if (!s->data)
 		goto err;
-	memset(s->data, 0, sizeof(*s->data));
+	memset(s->data, 0, sizeof(void *)*drv->qvec_nr);
 	s->next = NULL;
 	return s;
 err:
