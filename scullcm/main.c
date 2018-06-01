@@ -94,7 +94,7 @@ static void free_qset(struct scullcm_driver *drv, struct qset *s)
 	kmem_cache_free(drv->qsetc, s);
 }
 
-static void __trim_qset(struct scullcm_device *d)
+static void trim_qset(struct scullcm_device *d)
 {
 	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
 	struct qset *s;
@@ -104,13 +104,6 @@ static void __trim_qset(struct scullcm_device *d)
 		free_qset(drv, s);
 	}
 	d->size = 0;
-}
-
-static void trim_qset(struct scullcm_device *d)
-{
-	mutex_lock(&d->lock);
-	__trim_qset(d);
-	mutex_unlock(&d->lock);
 }
 
 static void *get_quantum(struct scullcm_driver *drv, struct qset *s, int s_pos)
@@ -228,7 +221,7 @@ static int open(struct inode *i, struct file *f)
 
 	/* trim the qset when it opened write only with trunk option */
 	if ((f->f_flags&O_ACCMODE) == O_WRONLY && f->f_flags&O_TRUNC)
-		__trim_qset(d);
+		trim_qset(d);
 	else if (d->qhead)
 		goto out;
 
