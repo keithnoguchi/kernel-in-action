@@ -8,6 +8,7 @@
 #include <linux/fs.h>
 #include <linux/err.h>
 #include <linux/string.h>
+#include <linux/mutex.h>
 
 #include "../ldd/ldd.h"
 
@@ -20,6 +21,7 @@
 static struct scullcm_driver {
 	dev_t			devt_base;
 	int			qvec_nr;
+	size_t			qsize;
 	struct kmem_cache	*qsetc;
 	struct kmem_cache	*qvecc;
 	struct kmem_cache	*quantumc;
@@ -27,10 +29,11 @@ static struct scullcm_driver {
 } driver = {
 	.ldd.module = THIS_MODULE,
 };
-#define to_driver(_drv)		container_of(to_ldd_driver(_drv), struct scullcm_driver, ldd)
+#define to_scullcm_driver(_drv)	container_of(to_ldd_driver(_drv), struct scullcm_driver, ldd)
 
 /* scullcm devices */
 static struct scullcm_device {
+	struct mutex		lock;
 	struct qset		*qhead;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
@@ -80,6 +83,16 @@ static void free_qset(struct scullcm_driver *drv, struct qset *q)
 	kmem_cache_free(drv->qsetc, q);
 }
 
+static void trim_qset(struct scullcm_driver *drv, struct qset **head)
+{
+	struct qset *q;
+
+	while ((q = *head)) {
+		*head = q->next;
+		free_qset(drv, q);
+	}
+}
+
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
 	struct scullcm_device *d = f->private_data;
@@ -101,13 +114,16 @@ static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *p
 static int open(struct inode *i, struct file *f)
 {
 	struct scullcm_device *d = container_of(i->i_cdev, struct scullcm_device, cdev);
-	struct scullcm_driver *drv = to_driver(d->ldd.dev.driver);
+	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
 	struct qset *q;
 	int err = 0;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
 	f->private_data = d;
+	if (mutex_lock_interruptible(&d->lock))
+		return -ERESTARTSYS;
+
 	if (d->qhead)
 		goto out;
 
@@ -119,23 +135,22 @@ static int open(struct inode *i, struct file *f)
 	}
 	d->qhead = q;
 out:
+	mutex_unlock(&d->lock);
 	return err;
 }
 
 static int release(struct inode *i, struct file *f)
 {
 	struct scullcm_device *d = f->private_data;
-	struct scullcm_driver *drv = to_driver(d->ldd.dev.driver);
-	struct qset *q;
+	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
-	f->private_data = NULL;
 
-	while ((q = d->qhead)) {
-		d->qhead = q->next;
-		free_qset(drv, q);
-	}
-	d->qhead = NULL;
+	if (mutex_lock_interruptible(&d->lock))
+		return -ERESTARTSYS;
+	trim_qset(drv, &d->qhead);
+	mutex_unlock(&d->lock);
+	f->private_data = NULL;
 
 	return 0;
 }
@@ -158,6 +173,7 @@ static int register_device(struct scullcm_device *d)
 
 	/* for cdev subsystem */
 	cdev_init(&d->cdev, &fops);
+	mutex_init(&d->lock);
 	err = cdev_add(&d->cdev, d->ldd.dev.devt, 1);
 	if (err)
 		unregister_ldd_device(&d->ldd);
@@ -174,17 +190,19 @@ static void unregister_device(struct scullcm_device *d)
 static int __init init(void)
 {
 	struct scullcm_device *d, *del;
-	int err;
+	int err = -ENOMEM;
 	int i;
 
 	pr_info("%s\n", __FUNCTION__);
 
-	err = -ENOMEM;
+
+	/* quantum set cache */
 	driver.qsetc = kmem_cache_create("scullcm_qset", sizeof(struct qset),
 					 0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!driver.qsetc)
 		goto destroy_caches;
 
+	/* quantum vector cache */
 	driver.qvec_nr = quantum_vector_number;
 	driver.qvecc = kmem_cache_create("scullcm_quantum_vector",
 					 sizeof(void *)*driver.qvec_nr,
@@ -192,7 +210,9 @@ static int __init init(void)
 	if (!driver.qvecc)
 		goto destroy_caches;
 
-	driver.quantumc = kmem_cache_create("scullcm_quantum",quantum_size,
+	/* quantum cache */
+	driver.qsize = quantum_size;
+	driver.quantumc = kmem_cache_create("scullcm_quantum", driver.qsize,
 					    0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!driver.quantumc)
 		goto destroy_caches;
