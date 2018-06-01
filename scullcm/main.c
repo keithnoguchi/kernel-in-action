@@ -40,7 +40,6 @@ static struct scullcm_device {
 	struct qset		*qhead;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
-	struct device_attribute	size_attr;
 } devices[] = {
 	{ .ldd.name = SCULLCM_DEVICE_PREFIX "0" },
 	{ .ldd.name = SCULLCM_DEVICE_PREFIX "1" },
@@ -262,20 +261,20 @@ static ssize_t show_device_size(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%ld\n", s->size);
 }
 
+static const struct device_attribute device_size_attr = {
+	.attr.name	= "size",
+	.attr.mode	= S_IRUGO,
+	.show		= show_device_size,
+};
+
 static int register_device_attr(struct scullcm_device *d)
 {
-	const struct device_attribute size_attr = {
-		.attr.name	= "size",
-		.attr.mode	= S_IRUGO,
-		.show		= show_device_size,
-	};
-	d->size_attr = size_attr;
-	return device_create_file(&d->ldd.dev, &d->size_attr);
+	return device_create_file(&d->ldd.dev, &device_size_attr);
 }
 
 static void unregister_device_attr(struct scullcm_device *d)
 {
-	device_remove_file(&d->ldd.dev, &d->size_attr);
+	device_remove_file(&d->ldd.dev, &device_size_attr);
 }
 
 static int register_device(struct scullcm_device *d)
@@ -321,13 +320,13 @@ static ssize_t show_driver_qsize(struct device_driver *drv, char *buf)
 	return snprintf(buf, PAGE_SIZE, "%ld\n", s->qsize);
 }
 
-static const struct driver_attribute qvec_nr_attr = {
+static const struct driver_attribute driver_qvec_nr_attr = {
 	.attr.name	= "quantum_vector_number",
 	.attr.mode	= S_IRUGO,
 	.show		= show_driver_qvec_nr,
 };
 
-static const struct driver_attribute qsize_attr = {
+static const struct driver_attribute driver_qsize_attr = {
 	.attr.name	= "quantum_size",
 	.attr.mode	= S_IRUGO,
 	.show		= show_driver_qsize,
@@ -337,19 +336,19 @@ static int register_driver_attr(struct scullcm_driver *drv)
 {
 	int err;
 
-	err = driver_create_file(&drv->ldd.driver, &qvec_nr_attr);
+	err = driver_create_file(&drv->ldd.driver, &driver_qvec_nr_attr);
 	if (err)
 		return err;
-	err = driver_create_file(&drv->ldd.driver, &qsize_attr);
+	err = driver_create_file(&drv->ldd.driver, &driver_qsize_attr);
 	if (err)
-		driver_remove_file(&drv->ldd.driver, &qvec_nr_attr);
+		driver_remove_file(&drv->ldd.driver, &driver_qvec_nr_attr);
 	return err;
 }
 
 static void unregister_driver_attr(struct scullcm_driver *drv)
 {
-	driver_remove_file(&drv->ldd.driver, &qvec_nr_attr);
-	driver_remove_file(&drv->ldd.driver, &qsize_attr);
+	driver_remove_file(&drv->ldd.driver, &driver_qvec_nr_attr);
+	driver_remove_file(&drv->ldd.driver, &driver_qsize_attr);
 }
 
 static int register_driver(struct scullcm_driver *drv)
