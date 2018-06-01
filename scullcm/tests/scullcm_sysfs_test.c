@@ -19,7 +19,7 @@ static int sysfs_test(int *i)
 		{
 			.name		= "/sys/bus/ldd/drivers/scullcm/version version",
 			.file_name	= "/sys/bus/ldd/drivers/scullcm/version",
-			.want		= "1.3.2",
+			.want		= "1.3.3",
 		},
 		{
 			.name		= "/sys/bus/ldd/devices/scullcm0/uevent read",

@@ -6,17 +6,22 @@
 #include <linux/slab.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
+#include <linux/err.h>
+#include <linux/string.h>
 
 #include "../ldd/ldd.h"
 
-#define SCULLMC_DRIVER_VERSION		"1.3.2"
-#define SCULLMC_DRIVER_NAME		"scullcm"
-#define SCULLMC_DEFAULT_QUANTUM_SIZE	PAGE_SIZE
+#define SCULLCM_DRIVER_VERSION			"1.3.3"
+#define SCULLCM_DRIVER_NAME			"scullcm"
+#define SCULLCM_DEFAULT_QUANTUM_VECTOR_NR	8
+#define SCULLCM_DEFAULT_QUANTUM_SIZE		PAGE_SIZE
 
 /* scullcm driver */
 static struct scullcm_driver {
 	dev_t			devt_base;
+	int			qvec_nr;
 	struct kmem_cache	*qsetc;
+	struct kmem_cache	*qvecc;
 	struct kmem_cache	*quantumc;
 	struct ldd_driver	ldd;
 } driver = {
@@ -26,27 +31,54 @@ static struct scullcm_driver {
 
 /* scullcm devices */
 static struct scullcm_device {
-	struct qset		*qset;
+	struct qset		*qhead;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
 } devices[] = {
-	{ .ldd.name = SCULLMC_DRIVER_NAME "0" },
-	{ .ldd.name = SCULLMC_DRIVER_NAME "1" },
-	{ .ldd.name = SCULLMC_DRIVER_NAME "2" },
-	{ .ldd.name = SCULLMC_DRIVER_NAME "3" },
+	{ .ldd.name = SCULLCM_DRIVER_NAME "0" },
+	{ .ldd.name = SCULLCM_DRIVER_NAME "1" },
+	{ .ldd.name = SCULLCM_DRIVER_NAME "2" },
+	{ .ldd.name = SCULLCM_DRIVER_NAME "3" },
 	{ /* sentinel */ },
 };
 
 /* quantum set */
 struct qset {
 	struct qset	*next;
-	void		*data[];
+	void		**data;
 };
 
-static const char *driver_version = SCULLMC_DRIVER_VERSION;
-static const char *driver_name = SCULLMC_DRIVER_NAME;
-static int quantum_size = SCULLMC_DEFAULT_QUANTUM_SIZE;
+static const char *driver_version = SCULLCM_DRIVER_VERSION;
+static const char *driver_name = SCULLCM_DRIVER_NAME;
+static int quantum_vector_number = SCULLCM_DEFAULT_QUANTUM_VECTOR_NR;
+static int quantum_size = SCULLCM_DEFAULT_QUANTUM_SIZE;
+module_param(quantum_vector_number, int, S_IRUGO);
 module_param(quantum_size, int, S_IRUGO);
+
+static struct qset *alloc_qset(struct scullcm_driver *drv)
+{
+	struct qset *q;
+
+	q = kmem_cache_alloc(drv->qsetc, GFP_KERNEL);
+	if (!q)
+		goto err;
+	q->data = kmem_cache_alloc(drv->qvecc, GFP_KERNEL);
+	if (!q->data)
+		goto err;
+	q->next = NULL;
+	return q;
+err:
+	if (q)
+		kmem_cache_free(drv->qsetc, q);
+	return ERR_PTR(-ENOMEM);
+}
+
+static void free_qset(struct scullcm_driver *drv, struct qset *q)
+{
+	if (q->data)
+		kmem_cache_free(drv->qvecc, q->data);
+	kmem_cache_free(drv->qsetc, q);
+}
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
@@ -70,30 +102,40 @@ static int open(struct inode *i, struct file *f)
 {
 	struct scullcm_device *d = container_of(i->i_cdev, struct scullcm_device, cdev);
 	struct scullcm_driver *drv = to_driver(d->ldd.dev.driver);
-	struct qset *qset;
+	struct qset *q;
+	int err = 0;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
-	qset = kmem_cache_alloc(drv->qsetc, GFP_KERNEL);
-	if (!qset)
-		return -ENOMEM;
-	d->qset = qset;
 	f->private_data = d;
+	if (d->qhead)
+		goto out;
 
-	return 0;
+	/* start with one quantum set */
+	q = alloc_qset(drv);
+	if (IS_ERR(q)) {
+		err = PTR_ERR(q);
+		goto out;
+	}
+	d->qhead = q;
+out:
+	return err;
 }
 
 static int release(struct inode *i, struct file *f)
 {
 	struct scullcm_device *d = f->private_data;
 	struct scullcm_driver *drv = to_driver(d->ldd.dev.driver);
+	struct qset *q;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 	f->private_data = NULL;
 
-	if (d->qset)
-		kmem_cache_free(drv->qsetc, d->qset);
-	d->qset = NULL;
+	while ((q = d->qhead)) {
+		d->qhead = q->next;
+		free_qset(drv, q);
+	}
+	d->qhead = NULL;
 
 	return 0;
 }
@@ -143,13 +185,20 @@ static int __init init(void)
 	if (!driver.qsetc)
 		goto destroy_caches;
 
-	driver.quantumc = kmem_cache_create("scullcm_quantum", quantum_size,
+	driver.qvec_nr = quantum_vector_number;
+	driver.qvecc = kmem_cache_create("scullcm_quantum_vector",
+					 sizeof(void *)*driver.qvec_nr,
+					 0, SLAB_HWCACHE_ALIGN, NULL);
+	if (!driver.qvecc)
+		goto destroy_caches;
+
+	driver.quantumc = kmem_cache_create("scullcm_quantum",quantum_size,
 					    0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!driver.quantumc)
 		goto destroy_caches;
 
 	err = alloc_chrdev_region(&driver.devt_base, 0, ARRAY_SIZE(devices),
-				  SCULLMC_DRIVER_NAME);
+				  SCULLCM_DRIVER_NAME);
 	if (err)
 		goto destroy_caches;
 
@@ -178,6 +227,8 @@ unregister_chrdev:
 destroy_caches:
 	if (driver.quantumc)
 		kmem_cache_destroy(driver.quantumc);
+	if (driver.qvecc)
+		kmem_cache_destroy(driver.qvecc);
 	if (driver.qsetc)
 		kmem_cache_destroy(driver.qsetc);
 	return err;
@@ -196,6 +247,8 @@ static void __exit cleanup(void)
 	unregister_chrdev_region(driver.devt_base, ARRAY_SIZE(devices));
 	if (driver.quantumc)
 		kmem_cache_destroy(driver.quantumc);
+	if (driver.qvecc)
+		kmem_cache_destroy(driver.qvecc);
 	if (driver.qsetc)
 		kmem_cache_destroy(driver.qsetc);
 }
