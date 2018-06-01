@@ -9,6 +9,7 @@
 #include <linux/err.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
+#include <linux/uaccess.h>
 
 #include "../ldd/ldd.h"
 
@@ -60,37 +61,49 @@ module_param(quantum_size, int, S_IRUGO);
 
 static struct qset *alloc_qset(struct scullcm_driver *drv)
 {
-	struct qset *q;
+	struct qset *s;
 
-	q = kmem_cache_alloc(drv->qsetc, GFP_KERNEL);
-	if (!q)
+	s = kmem_cache_alloc(drv->qsetc, GFP_KERNEL);
+	if (!s)
 		goto err;
-	q->data = kmem_cache_alloc(drv->qvecc, GFP_KERNEL);
-	if (!q->data)
+	s->data = kmem_cache_alloc(drv->qvecc, GFP_KERNEL);
+	if (!s->data)
 		goto err;
-	q->next = NULL;
-	return q;
+	s->next = NULL;
+	return s;
 err:
-	if (q)
-		kmem_cache_free(drv->qsetc, q);
+	if (s)
+		kmem_cache_free(drv->qsetc, s);
 	return ERR_PTR(-ENOMEM);
 }
 
-static void free_qset(struct scullcm_driver *drv, struct qset *q)
+static void free_qset(struct scullcm_driver *drv, struct qset *s)
 {
-	if (q->data)
-		kmem_cache_free(drv->qvecc, q->data);
-	kmem_cache_free(drv->qsetc, q);
+	if (s->data) {
+		int i;
+		for (i = 0; i < drv->qvec_nr; i++)
+			if (s->data[i])
+				kmem_cache_free(drv->quantumc, s->data[i]);
+		kmem_cache_free(drv->qvecc, s->data);
+	}
+	kmem_cache_free(drv->qsetc, s);
 }
 
 static void trim_qset(struct scullcm_driver *drv, struct qset **head)
 {
-	struct qset *q;
+	struct qset *s;
 
-	while ((q = *head)) {
-		*head = q->next;
-		free_qset(drv, q);
+	while ((s = *head)) {
+		*head = s->next;
+		free_qset(drv, s);
 	}
+}
+
+static void *get_quantum(struct scullcm_driver *drv, struct qset *s, int qpos)
+{
+	if (!s->data[qpos])
+		s->data[qpos] = kmem_cache_alloc(drv->quantumc, GFP_KERNEL);
+	return s->data[qpos];
 }
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
@@ -105,10 +118,41 @@ static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *pos)
 {
 	struct scullcm_device *d = f->private_data;
+	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
+	int s_pos, q_pos;
+	void *q;
+	int ret;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
-	return n;
+	/* no multi qsets support */
+	if (*pos > drv->qvec_nr*drv->qsize)
+		return -EINVAL;
+
+	/* find the quantum */
+	s_pos = *pos/drv->qsize;
+	q_pos = *pos%drv->qsize;
+
+	/* no multi quantum write */
+	if (q_pos+n > drv->qsize)
+		n = drv->qsize-q_pos;
+
+	if (mutex_lock_interruptible(&d->lock))
+		return -ERESTARTSYS;
+
+	ret = -ENOMEM;
+	q = get_quantum(drv, d->qhead, s_pos);
+	if (!q)
+		goto out;
+
+	ret = -EINVAL;
+	if (copy_from_user(q+q_pos, buf, n))
+		goto out;
+	*pos += n;
+	ret = n;
+out:
+	mutex_unlock(&d->lock);
+	return ret;
 }
 
 static int open(struct inode *i, struct file *f)
