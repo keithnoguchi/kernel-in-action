@@ -94,14 +94,17 @@ static void free_qset(struct scullcm_driver *drv, struct qset *s)
 	kmem_cache_free(drv->qsetc, s);
 }
 
-static void trim_qset(struct scullcm_driver *drv, struct qset **head)
+static void trim_qset(struct scullcm_device *d)
 {
+	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
 	struct qset *s;
 
-	while ((s = *head)) {
-		*head = s->next;
+	mutex_lock(&d->lock);
+	while ((s = d->qhead)) {
+		d->qhead = s->next;
 		free_qset(drv, s);
 	}
+	mutex_unlock(&d->lock);
 }
 
 static void *get_quantum(struct scullcm_driver *drv, struct qset *s, int s_pos)
@@ -298,9 +301,7 @@ unregister:
 
 static void unregister_device(struct scullcm_device *d)
 {
-	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
-
-	trim_qset(drv, &d->qhead);
+	trim_qset(d);
 	cdev_del(&d->cdev);
 	unregister_device_attr(d);
 	unregister_ldd_device(&d->ldd);
