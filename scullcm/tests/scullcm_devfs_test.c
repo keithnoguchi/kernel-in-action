@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
@@ -14,6 +15,7 @@ static int test_devfs(int *i)
 	const struct test {
 		const char	*name;
 		const char	*devname;
+		const char	*sysfsname;
 		size_t		writen;
 		size_t		readn;
 	} tests[] = {
@@ -36,26 +38,31 @@ static int test_devfs(int *i)
 		{
 			.name		= "/dev/scullcm0 1024 bytes write",
 			.devname	= "/dev/scullcm0",
+			.sysfsname	= "/sys/bus/ldd/devices/scullcm0/size",
 			.writen		= 1024,
 		},
 		{
 			.name		= "/dev/scullcm1 1024 bytes write",
 			.devname	= "/dev/scullcm1",
+			.sysfsname	= "/sys/bus/ldd/devices/scullcm1/size",
 			.writen		= 1024,
 		},
 		{
 			.name		= "/dev/scullcm2 1024 bytes write",
 			.devname	= "/dev/scullcm2",
+			.sysfsname	= "/sys/bus/ldd/devices/scullcm2/size",
 			.writen		= 1024,
 		},
 		{
 			.name		= "/dev/scullcm3 1024 bytes write",
 			.devname	= "/dev/scullcm3",
+			.sysfsname	= "/sys/bus/ldd/devices/scullcm3/size",
 			.writen		= 1024,
 		},
 		{
 			.name		= "/dev/scullcm0 4096 bytes write",
 			.devname	= "/dev/scullcm0",
+			.sysfsname	= "/sys/bus/ldd/devices/scullcm0/size",
 			.writen		= 4096,
 		},
 		{
@@ -128,6 +135,37 @@ static int test_devfs(int *i)
 			if (ret != t->writen) {
 				printf("FAIL: %d=write(%d)\n", ret, t->writen);
 				goto fail_free_close;
+			}
+			if (t->sysfsname) {
+				char buf[BUFSIZ];
+				char *nl;
+				int got;
+				int ret;
+				int fd;
+
+				fd = open(t->sysfsname, O_RDONLY);
+				if (fd == -1) {
+					printf("FAIL: open(%s): %s\n",
+					       t->sysfsname, strerror(errno));
+					goto fail_free_close;
+				}
+				ret = read(fd, buf, sizeof(buf));
+				if (ret == -1) {
+					printf("FAIL: read(%s): %s\n",
+					       t->sysfsname, strerror(errno));
+					close(fd);
+					goto fail_free_close;
+				}
+				close(fd);
+				nl = strchr(buf, '\n');
+				if (nl)
+					*nl = '\0';
+				got = atoi(buf);
+				if (got != t->writen) {
+					printf("FAIL: device file: got=%d, want=%d\n",
+					       got, t->writen);
+					goto fail_free_close;
+				}
 			}
 			if (t->readn) {
 				int total;
