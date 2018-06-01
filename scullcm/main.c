@@ -15,6 +15,7 @@
 
 #define SCULLCM_DRIVER_VERSION			"1.3.3"
 #define SCULLCM_DRIVER_NAME			"scullcm"
+#define SCULLCM_DEVICE_PREFIX			SCULLCM_DRIVER_NAME
 #define SCULLCM_DEFAULT_QUANTUM_VECTOR_NR	8
 #define SCULLCM_DEFAULT_QUANTUM_SIZE		PAGE_SIZE
 
@@ -39,13 +40,15 @@ static struct scullcm_device {
 	struct qset		*qhead;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
+	struct device_attribute	size_attr;
 } devices[] = {
-	{ .ldd.name = SCULLCM_DRIVER_NAME "0" },
-	{ .ldd.name = SCULLCM_DRIVER_NAME "1" },
-	{ .ldd.name = SCULLCM_DRIVER_NAME "2" },
-	{ .ldd.name = SCULLCM_DRIVER_NAME "3" },
+	{ .ldd.name = SCULLCM_DEVICE_PREFIX "0" },
+	{ .ldd.name = SCULLCM_DEVICE_PREFIX "1" },
+	{ .ldd.name = SCULLCM_DEVICE_PREFIX "2" },
+	{ .ldd.name = SCULLCM_DEVICE_PREFIX "3" },
 	{ /* sentinel */ },
 };
+#define to_scullcm_device(_d)	container_of(to_ldd_device(_d), struct scullcm_device, ldd)
 
 /* quantum set */
 struct qset {
@@ -118,7 +121,7 @@ static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
-	/* no data to read */
+	/* no more data to read */
 	if (*pos >= d->size)
 		return 0;
 
@@ -247,6 +250,29 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
+static ssize_t show_device_size(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct scullcm_device *d = to_scullcm_device(dev);
+	return snprintf(buf, PAGE_SIZE, "%ld\n", d->size);
+}
+
+static int register_device_attr(struct scullcm_device *d)
+{
+	const struct device_attribute size_attr = {
+		.attr.name	= "size",
+		.attr.mode	= S_IRUGO,
+		.show		= show_device_size,
+	};
+	d->size_attr = size_attr;
+	return device_create_file(&d->ldd.dev, &d->size_attr);
+}
+
+static void unregister_device_attr(struct scullcm_device *d)
+{
+	device_remove_file(&d->ldd.dev, &d->size_attr);
+}
+
 static int register_device(struct scullcm_device *d)
 {
 	int err;
@@ -260,8 +286,13 @@ static int register_device(struct scullcm_device *d)
 	mutex_init(&d->lock);
 	err = cdev_add(&d->cdev, d->ldd.dev.devt, 1);
 	if (err)
-		unregister_ldd_device(&d->ldd);
-
+		goto unregister;
+	err = register_device_attr(d);
+	if (err)
+		goto unregister;
+	return 0;
+unregister:
+	unregister_ldd_device(&d->ldd);
 	return err;
 }
 
@@ -271,6 +302,7 @@ static void unregister_device(struct scullcm_device *d)
 
 	trim_qset(drv, &d->qhead);
 	cdev_del(&d->cdev);
+	unregister_device_attr(d);
 	unregister_ldd_device(&d->ldd);
 }
 

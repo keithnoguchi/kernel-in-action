@@ -8,7 +8,7 @@ struct ldd_device {
 	const char		*name;
 	struct device		dev;
 };
-#define to_ldd_device(_dev)	container_of(_dev, struct lddd_device, dev)
+#define to_ldd_device(_dev)	container_of(_dev, struct ldd_device, dev)
 
 /* ldd device driver */
 struct ldd_driver {
