@@ -10,11 +10,11 @@
 #include "../ldd/ldd.h"
 
 #define SCULLMC_DRIVER_VERSION		"1.3.2"
-#define SCULLMC_DRIVER_NAME		"scullmc"
+#define SCULLMC_DRIVER_NAME		"scullcm"
 #define SCULLMC_DEFAULT_QUANTUM_SIZE	PAGE_SIZE
 
-/* scullmc driver */
-static struct scullmc_driver {
+/* scullcm driver */
+static struct scullcm_driver {
 	dev_t			devt_base;
 	struct kmem_cache	*qsetc;
 	struct kmem_cache	*quantumc;
@@ -22,10 +22,10 @@ static struct scullmc_driver {
 } driver = {
 	.ldd.module = THIS_MODULE,
 };
-#define to_driver(_drv)		container_of(to_ldd_driver(_drv), struct scullmc_driver, ldd)
+#define to_driver(_drv)		container_of(to_ldd_driver(_drv), struct scullcm_driver, ldd)
 
-/* scullmc devices */
-static struct scullmc_device {
+/* scullcm devices */
+static struct scullcm_device {
 	struct qset		*qset;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
@@ -50,7 +50,7 @@ module_param(quantum_size, int, S_IRUGO);
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
-	struct scullmc_device *d = f->private_data;
+	struct scullcm_device *d = f->private_data;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
@@ -59,7 +59,7 @@ static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 
 static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *pos)
 {
-	struct scullmc_device *d = f->private_data;
+	struct scullcm_device *d = f->private_data;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
@@ -68,8 +68,8 @@ static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *p
 
 static int open(struct inode *i, struct file *f)
 {
-	struct scullmc_device *d = container_of(i->i_cdev, struct scullmc_device, cdev);
-	struct scullmc_driver *drv = to_driver(d->ldd.dev.driver);
+	struct scullcm_device *d = container_of(i->i_cdev, struct scullcm_device, cdev);
+	struct scullcm_driver *drv = to_driver(d->ldd.dev.driver);
 	struct qset *qset;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
@@ -85,8 +85,8 @@ static int open(struct inode *i, struct file *f)
 
 static int release(struct inode *i, struct file *f)
 {
-	struct scullmc_device *d = f->private_data;
-	struct scullmc_driver *drv = to_driver(d->ldd.dev.driver);
+	struct scullcm_device *d = f->private_data;
+	struct scullcm_driver *drv = to_driver(d->ldd.dev.driver);
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 	f->private_data = NULL;
@@ -106,7 +106,7 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
-static int register_device(struct scullmc_device *d)
+static int register_device(struct scullcm_device *d)
 {
 	int err;
 
@@ -123,7 +123,7 @@ static int register_device(struct scullmc_device *d)
 	return err;
 }
 
-static void unregister_device(struct scullmc_device *d)
+static void unregister_device(struct scullcm_device *d)
 {
 	cdev_del(&d->cdev);
 	unregister_ldd_device(&d->ldd);
@@ -131,19 +131,19 @@ static void unregister_device(struct scullmc_device *d)
 
 static int __init init(void)
 {
-	struct scullmc_device *d, *del;
+	struct scullcm_device *d, *del;
 	int err;
 	int i;
 
 	pr_info("%s\n", __FUNCTION__);
 
 	err = -ENOMEM;
-	driver.qsetc = kmem_cache_create("scullmc_qset", sizeof(struct qset),
+	driver.qsetc = kmem_cache_create("scullcm_qset", sizeof(struct qset),
 					 0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!driver.qsetc)
 		goto destroy_caches;
 
-	driver.quantumc = kmem_cache_create("scullmc_quantum", quantum_size,
+	driver.quantumc = kmem_cache_create("scullcm_quantum", quantum_size,
 					    0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!driver.quantumc)
 		goto destroy_caches;
@@ -160,7 +160,7 @@ static int __init init(void)
 		goto unregister_chrdev;
 
 	for (i = 0, d = devices; d->ldd.name; i++, d++) {
-		/* for /dev/scullmcX file */
+		/* for /dev/scullcmX file */
 		d->ldd.dev.devt = MKDEV(MAJOR(driver.devt_base),
 					MINOR(driver.devt_base)+i);
 		err = register_device(d);
@@ -186,7 +186,7 @@ module_init(init);
 
 static void __exit cleanup(void)
 {
-	struct scullmc_device *d;
+	struct scullcm_device *d;
 
 	pr_info("%s\n", __FUNCTION__);
 

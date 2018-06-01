@@ -13,7 +13,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Scullp](#scullp)
   - [Ldd](#ldd)
   - [Sculld](#sculld)
-  - [Scullmc](#scullmc)
+  - [Scullcm](#scullcm)
   - [/proc/currenttime](#currenttime)
   - [Snull](#snull)
 - [Test](#test)
@@ -420,11 +420,11 @@ air1$ tree /sys/bus/ldd
 air1$
 ```
 
-### Scullmc
+### Scullcm
 
-[scullmc] is a memory cache example, explained in [LDD Chapter 8]:
+[scullcm] is a memory cache based [scull], demonstrated in [LDD Chapter 8]:
 
-[scullmc]: scullmc/main.c
+[scullcm]: scullcm/main.c
 
 ### currenttime
 

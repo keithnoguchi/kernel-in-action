@@ -16,20 +16,20 @@ static int test_devfs(int *i)
 		const char	*devname;
 	} tests[] = {
 		{
-			.name		= "/dev/scullmc0 simple open",
-			.devname	= "/dev/scullmc0",
+			.name		= "/dev/scullcm0 simple open",
+			.devname	= "/dev/scullcm0",
 		},
 		{
-			.name		= "/dev/scullmc1 simple open",
-			.devname	= "/dev/scullmc1",
+			.name		= "/dev/scullcm1 simple open",
+			.devname	= "/dev/scullcm1",
 		},
 		{
-			.name		= "/dev/scullmc2 simple open",
-			.devname	= "/dev/scullmc2",
+			.name		= "/dev/scullcm2 simple open",
+			.devname	= "/dev/scullcm2",
 		},
 		{
-			.name		= "/dev/scullmc3 simple open",
-			.devname	= "/dev/scullmc3",
+			.name		= "/dev/scullcm3 simple open",
+			.devname	= "/dev/scullcm3",
 		},
 		{ /* sentry */ },
 	};

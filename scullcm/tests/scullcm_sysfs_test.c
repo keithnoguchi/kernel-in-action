@@ -17,28 +17,28 @@ static int sysfs_test(int *i)
 		const char	*want;
 	} tests[] = {
 		{
-			.name		= "/sys/bus/ldd/drivers/scullmc/version version",
-			.file_name	= "/sys/bus/ldd/drivers/scullmc/version",
+			.name		= "/sys/bus/ldd/drivers/scullcm/version version",
+			.file_name	= "/sys/bus/ldd/drivers/scullcm/version",
 			.want		= "1.3.2",
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullmc0/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullmc0/uevent",
+			.name		= "/sys/bus/ldd/devices/scullcm0/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullcm0/uevent",
 			.flags		= O_RDONLY,
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullmc1/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullmc1/uevent",
+			.name		= "/sys/bus/ldd/devices/scullcm1/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullcm1/uevent",
 			.flags		= O_RDONLY,
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullmc2/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullmc2/uevent",
+			.name		= "/sys/bus/ldd/devices/scullcm2/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullcm2/uevent",
 			.flags		= O_RDONLY,
 		},
 		{
-			.name		= "/sys/bus/ldd/devices/scullmc3/uevent read",
-			.file_name	= "/sys/bus/ldd/devices/scullmc3/uevent",
+			.name		= "/sys/bus/ldd/devices/scullcm3/uevent read",
+			.file_name	= "/sys/bus/ldd/devices/scullcm3/uevent",
 			.flags		= O_RDONLY,
 		},
 		{ /* sentinel */ },

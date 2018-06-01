@@ -17,14 +17,14 @@ static int test_procfs(int *i)
 		const char	*needle;
 	} tests[] = {
 		{
-			.name		= "find scullmc in /proc/devices",
+			.name		= "find scullcm in /proc/devices",
 			.filename	= "/proc/devices",
-			.needle		= "scullmc",
+			.needle		= "scullcm",
 		},
 		{
-			.name		= "find scullmc_qset in /proc/slabinfo",
+			.name		= "find scullcm_qset in /proc/slabinfo",
 			.filename	= "/proc/slabinfo",
-			.needle		= "scullmc_qset",
+			.needle		= "scullcm_qset",
 		},
 		{ /* sentinel */ },
 	};

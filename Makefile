@@ -7,7 +7,7 @@ obj-m += sleepy/
 obj-m += scullp/
 obj-m += ldd/
 obj-m += sculld/
-obj-m += scullmc/
+obj-m += scullcm/
 obj-m += currenttime/
 obj-m += snull/
 
@@ -30,7 +30,7 @@ TARGETS += scullp
 TARGETS += sleepy
 TARGETS += ldd
 TARGETS += sculld
-TARGETS += scullmc
+TARGETS += scullcm
 TARGETS += currenttime
 TARGETS += lspci
 TARGETS += snull
