@@ -118,9 +118,9 @@ static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
-	/* no multi qsets support */
-	if (*pos > drv->qvec_nr*drv->qsize)
-		return -EINVAL;
+	/* no data to read */
+	if (*pos >= d->size)
+		return 0;
 
 	/* find the quantum */
 	s_pos = *pos/drv->qsize;

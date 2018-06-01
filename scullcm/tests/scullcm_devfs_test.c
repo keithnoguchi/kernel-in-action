@@ -130,19 +130,27 @@ static int test_devfs(int *i)
 				goto fail_free_close;
 			}
 			if (t->readn) {
+				int total;
 				int ret;
 				int i;
 
 				rbuf = malloc(t->readn);
 				memset(rbuf, 'r', t->readn);
-				ret = read(fd, rbuf, t->readn);
-				if (ret == -1) {
-					printf("FAIL: read(%d): %s\n",
-					       t->readn, strerror(errno));
-					goto fail_free_close;
+				/* read all */
+				total = 0;
+				while (total < t->readn) {
+					ret = read(fd, rbuf+total, t->readn-total);
+					if (ret == -1) {
+						printf("FAIL: read(%d): %s\n",
+						       t->readn, strerror(errno));
+						goto fail_free_close;
+					}
+					if (ret == 0)
+						break;
+					total += ret;
 				}
-				if (ret != t->readn) {
-					printf("FAIL: %d=read(%d)\n", ret, t->readn);
+				if (total != t->readn) {
+					printf("FAIL: %d=read(%d)\n", total, t->readn);
 					goto fail_free_close;
 				}
 				for (i = 0; i < t->readn; i++)
