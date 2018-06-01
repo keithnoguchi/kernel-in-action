@@ -17,10 +17,16 @@ static int sysfs_test(int *i)
 		const char	*want;
 	} tests[] = {
 		{
-			.name		= "/sys/bus/ldd/drivers/scullcm/version version",
+			.name		= "/sys/bus/ldd/drivers/scullcm/version driver version",
 			.file_name	= "/sys/bus/ldd/drivers/scullcm/version",
 			.flags		= O_RDONLY,
-			.want		= "1.3.3",
+			.want		= "1.3.4",
+		},
+		{
+			.name		= "/sys/bus/ldd/drivers/scullcm/qsize quantum size",
+			.file_name	= "/sys/bus/ldd/drivers/scullcm/qsize",
+			.flags		= O_RDONLY,
+			.want		= "4096",
 		},
 		{
 			.name		= "/sys/bus/ldd/devices/scullcm0/size read",

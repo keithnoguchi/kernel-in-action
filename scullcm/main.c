@@ -28,6 +28,7 @@ static struct scullcm_driver {
 	struct kmem_cache	*qvecc;
 	struct kmem_cache	*quantumc;
 	struct ldd_driver	ldd;
+	struct driver_attribute	qsize_attr;
 } driver = {
 	.ldd.module = THIS_MODULE,
 };
@@ -258,8 +259,8 @@ static const struct file_operations fops = {
 static ssize_t show_device_size(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	struct scullcm_device *d = to_scullcm_device(dev);
-	return snprintf(buf, PAGE_SIZE, "%ld\n", d->size);
+	struct scullcm_device *s = to_scullcm_device(dev);
+	return snprintf(buf, PAGE_SIZE, "%ld\n", s->size);
 }
 
 static int register_device_attr(struct scullcm_device *d)
@@ -309,6 +310,28 @@ static void unregister_device(struct scullcm_device *d)
 	unregister_ldd_device(&d->ldd);
 }
 
+static ssize_t show_driver_qsize(struct device_driver *drv, char *buf)
+{
+	struct scullcm_driver *s = to_scullcm_driver(drv);
+	return snprintf(buf, PAGE_SIZE, "%ld\n", s->qsize);
+}
+
+static int register_driver_attr(struct scullcm_driver *drv)
+{
+	const struct driver_attribute qsize_attr = {
+		.attr.name	= "qsize",
+		.attr.mode	= S_IRUGO,
+		.show		= show_driver_qsize,
+	};
+	drv->qsize_attr = qsize_attr;
+	return driver_create_file(&drv->ldd.driver, &drv->qsize_attr);
+}
+
+static void unregister_driver_attr(struct scullcm_driver *drv)
+{
+	driver_remove_file(&drv->ldd.driver, &drv->qsize_attr);
+}
+
 static int __init init(void)
 {
 	struct scullcm_device *d, *del;
@@ -316,7 +339,6 @@ static int __init init(void)
 	int i;
 
 	pr_info("%s\n", __FUNCTION__);
-
 
 	/* quantum set cache */
 	driver.qsetc = kmem_cache_create("scullcm_qset", sizeof(struct qset),
@@ -350,6 +372,10 @@ static int __init init(void)
 	if (err)
 		goto unregister_chrdev;
 
+	err = register_driver_attr(&driver);
+	if (err)
+		goto unregister_chrdev;
+
 	for (i = 0, d = devices; d->ldd.name; i++, d++) {
 		/* for /dev/scullcmX file */
 		d->ldd.dev.devt = MKDEV(MAJOR(driver.devt_base),
@@ -363,6 +389,7 @@ static int __init init(void)
 unregister:
 	for (del = devices; del != d; del++)
 		unregister_device(del);
+	unregister_driver_attr(&driver);
 	unregister_ldd_driver(&driver.ldd);
 unregister_chrdev:
 	unregister_chrdev_region(driver.devt_base, ARRAY_SIZE(devices));
@@ -385,6 +412,7 @@ static void __exit cleanup(void)
 
 	for (d = devices; d->ldd.name; d++)
 		unregister_device(d);
+	unregister_driver_attr(&driver);
 	unregister_ldd_driver(&driver.ldd);
 	unregister_chrdev_region(driver.devt_base, ARRAY_SIZE(devices));
 	if (driver.quantumc)
