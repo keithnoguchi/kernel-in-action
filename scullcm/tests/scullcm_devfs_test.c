@@ -15,6 +15,7 @@ static int test_devfs(int *i)
 		const char	*name;
 		const char	*devname;
 		size_t		writen;
+		size_t		readn;
 	} tests[] = {
 		{
 			.name		= "/dev/scullcm0 simple open",
@@ -72,12 +73,37 @@ static int test_devfs(int *i)
 			.devname	= "/dev/scullcm3",
 			.writen		= 4096,
 		},
+		{
+			.name		= "/dev/scullcm0 1024 bytes write & read",
+			.devname	= "/dev/scullcm0",
+			.writen		= 1024,
+			.readn		= 1024,
+		},
+		{
+			.name		= "/dev/scullcm1 1024 bytes write & read",
+			.devname	= "/dev/scullcm1",
+			.writen		= 1024,
+			.readn		= 1024,
+		},
+		{
+			.name		= "/dev/scullcm2 1024 bytes write & read",
+			.devname	= "/dev/scullcm2",
+			.writen		= 1024,
+			.readn		= 1024,
+		},
+		{
+			.name		= "/dev/scullcm3 1024 bytes write & read",
+			.devname	= "/dev/scullcm3",
+			.writen		= 1024,
+			.readn		= 1024,
+		},
 		{ /* sentry */ },
 	};
 	const struct test *t;
 	int fail = 0;
 
 	for (t = tests; t->name; t++) {
+		char *wbuf = NULL, *rbuf = NULL;
 		int err;
 		int fd;
 
@@ -89,23 +115,55 @@ static int test_devfs(int *i)
 			goto fail;
 		}
 		if (t->writen) {
-			char *buf = malloc(t->writen);
-			int ret = write(fd, buf, t->writen);
-			free(buf);
+			int ret;
+
+			wbuf = malloc(t->writen);
+			memset(wbuf, 'w', t->writen);
+			ret = write(fd, wbuf, t->writen);
 			if (ret == -1) {
 				printf("FAIL: write(%d): %s\n",
 				       t->writen, strerror(errno));
-				goto fail_close;
+				goto fail_free_close;
 			}
 			if (ret != t->writen) {
 				printf("FAIL: %d=write(%d)\n", ret, t->writen);
-				goto fail_close;
+				goto fail_free_close;
 			}
+			if (t->readn) {
+				int ret;
+				int i;
+
+				rbuf = malloc(t->readn);
+				memset(rbuf, 'r', t->readn);
+				ret = read(fd, rbuf, t->readn);
+				if (ret == -1) {
+					printf("FAIL: read(%d): %s\n",
+					       t->readn, strerror(errno));
+					goto fail_free_close;
+				}
+				if (ret != t->readn) {
+					printf("FAIL: %d=read(%d)\n", ret, t->readn);
+					goto fail_free_close;
+				}
+				for (i = 0; i < t->readn; i++)
+					if (rbuf[i] != 'w') {
+						printf("FAIL: '%c'(rbuf[%d])!='%c'\n",
+						       rbuf[i], i, 'w');
+						goto fail_free_close;
+					}
+				free(rbuf);
+			}
+			free(wbuf);
 		}
 		close(fd);
 		puts("PASS");
 		ksft_inc_pass_cnt();
 		continue;
+fail_free_close:
+		if (wbuf)
+			free(wbuf);
+		if (rbuf)
+			free(rbuf);
 fail_close:
 		close(fd);
 fail:

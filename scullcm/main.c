@@ -35,6 +35,7 @@ static struct scullcm_driver {
 /* scullcm devices */
 static struct scullcm_device {
 	struct mutex		lock;
+	size_t			size;
 	struct qset		*qhead;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
@@ -69,6 +70,7 @@ static struct qset *alloc_qset(struct scullcm_driver *drv)
 	s->data = kmem_cache_alloc(drv->qvecc, GFP_KERNEL);
 	if (!s->data)
 		goto err;
+	memset(s->data, 0, sizeof(*s->data));
 	s->next = NULL;
 	return s;
 err:
@@ -99,20 +101,62 @@ static void trim_qset(struct scullcm_driver *drv, struct qset **head)
 	}
 }
 
-static void *get_quantum(struct scullcm_driver *drv, struct qset *s, int qpos)
+static void *get_quantum(struct scullcm_driver *drv, struct qset *s, int s_pos)
 {
-	if (!s->data[qpos])
-		s->data[qpos] = kmem_cache_alloc(drv->quantumc, GFP_KERNEL);
-	return s->data[qpos];
+	if (!s->data[s_pos])
+		s->data[s_pos] = kmem_cache_alloc(drv->quantumc, GFP_KERNEL);
+	return s->data[s_pos];
 }
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
 	struct scullcm_device *d = f->private_data;
+	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
+	int s_pos, q_pos;
+	void *q;
+	int ret;
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
 
-	return 0;
+	/* no multi qsets support */
+	if (*pos > drv->qvec_nr*drv->qsize)
+		return -EINVAL;
+
+	/* find the quantum */
+	s_pos = *pos/drv->qsize;
+	q_pos = *pos%drv->qsize;
+
+	/* only single quantum read */
+	if (q_pos+n > drv->qsize)
+		n = drv->qsize-q_pos;
+
+	if (mutex_lock_interruptible(&d->lock))
+		return -ERESTARTSYS;
+
+	/* no more data */
+	if (*pos == d->size) {
+		ret = 0;
+		goto out;
+	}
+	/* only read the remaining data */
+	if (*pos + n >= d->size)
+		n = d->size-*pos;
+
+	/* find the quantum */
+	ret = -EINVAL;
+	q = d->qhead->data[s_pos];
+	if (!q)
+		goto out;
+
+	/* copy to the user */
+	ret = -EINVAL;
+	if (copy_to_user(buf, q+q_pos, n))
+		goto out;
+	*pos += n;
+	ret = n;
+out:
+	mutex_unlock(&d->lock);
+	return ret;
 }
 
 static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *pos)
@@ -150,6 +194,8 @@ static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *p
 		goto out;
 	*pos += n;
 	ret = n;
+	if (*pos > d->size)
+		d->size = *pos;
 out:
 	mutex_unlock(&d->lock);
 	return ret;
@@ -186,14 +232,8 @@ out:
 static int release(struct inode *i, struct file *f)
 {
 	struct scullcm_device *d = f->private_data;
-	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
 
 	pr_info("%s(%s)\n", __FUNCTION__, ldd_dev_name(&d->ldd));
-
-	if (mutex_lock_interruptible(&d->lock))
-		return -ERESTARTSYS;
-	trim_qset(drv, &d->qhead);
-	mutex_unlock(&d->lock);
 	f->private_data = NULL;
 
 	return 0;
@@ -227,6 +267,9 @@ static int register_device(struct scullcm_device *d)
 
 static void unregister_device(struct scullcm_device *d)
 {
+	struct scullcm_driver *drv = to_scullcm_driver(d->ldd.dev.driver);
+
+	trim_qset(drv, &d->qhead);
 	cdev_del(&d->cdev);
 	unregister_ldd_device(&d->ldd);
 }
