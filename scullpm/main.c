@@ -5,6 +5,7 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/kdev_t.h>
 
 #include "../ldd/ldd.h"
 
@@ -14,6 +15,7 @@
 
 /* driver */
 static struct scullpm_driver {
+	dev_t			devt;
 	struct ldd_driver	ldd;
 } scullpm = {
 	.ldd.module		= THIS_MODULE,
@@ -71,12 +73,27 @@ static void unregister_device(struct scullpm_device *d)
 
 static int register_driver(struct scullpm_driver *drv)
 {
-	return register_ldd_driver(&drv->ldd);
+	size_t nr = ARRAY_SIZE(devices);
+	int err;
+
+	err = register_ldd_driver(&drv->ldd);
+	if (err)
+		return err;
+
+	err = alloc_chrdev_region(&drv->devt, 0, nr, drv->ldd.driver.name);
+	if (err)
+		goto unregister;
+
+	return err;
+unregister:
+	unregister_ldd_driver(&drv->ldd);
+	return err;
 }
 
 static void unregister_driver(struct scullpm_driver *drv)
 {
 	unregister_ldd_driver(&drv->ldd);
+	unregister_chrdev_region(drv->devt, ARRAY_SIZE(devices));
 }
 
 static int __init init(void)
