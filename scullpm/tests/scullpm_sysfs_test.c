@@ -16,14 +16,24 @@ static int test_sysfs(int *i)
 		const char	*want;
 	} tests[] = {
 		{
-			.name		= "/sys/module/scullpm/initstate: initial state",
+			.name		= "/sys/module/scullpm/initstate initial state",
 			.filename	= "/sys/module/scullpm/initstate",
 			.want		= "live",
 		},
 		{
-			.name		= "/sys/bus/ldd/drivers/scullpm/version: drvier version",
+			.name		= "/sys/bus/ldd/drivers/scullpm/version drvier version",
 			.filename	= "/sys/bus/ldd/drivers/scullpm/version",
 			.want		= "1.0.0",
+		},
+		{
+			.name		= "/sys/bus/ldd/drivers/scullpm/scullpm0/uevent file",
+			.filename	= "/sys/bus/ldd/drivers/scullpm/scullpm0/uevent",
+			.want		= "DRIVER=scullpm",
+		},
+		{
+			.name		= "/sys/bus/ldd/drivers/scullpm/scullpm1/uevent file",
+			.filename	= "/sys/bus/ldd/drivers/scullpm/scullpm1/uevent",
+			.want		= "DRIVER=scullpm",
 		},
 		{ /* sentinel */ },
 	};
