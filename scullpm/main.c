@@ -3,6 +3,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
+#include <linux/string.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/kdev_t.h>
@@ -32,6 +33,7 @@ static struct scullpm_device {
 	{ .ldd.name	= SCULLPM_DEVICE_PREFIX "1" },
 	{ /* sentinel */ },
 };
+#define to_scullpm_device(_dev)	container_of(to_ldd_device(_dev), struct scullpm_device, ldd)
 
 static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
 {
@@ -60,6 +62,30 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
+static ssize_t show_major_number(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", MAJOR(dev->devt));
+}
+
+static const struct device_attribute major_attr = {
+	.attr.name	= "major_number",
+	.attr.mode	= S_IRUGO,
+	.show		= show_major_number,
+};
+
+static ssize_t show_minor_number(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", MINOR(dev->devt));
+}
+
+static const struct device_attribute minor_attr = {
+	.attr.name	= "minor_number",
+	.attr.mode	= S_IRUGO,
+	.show		= show_minor_number,
+};
+
 static int register_device(struct scullpm_device *d, dev_t devt)
 {
 	int err;
@@ -70,18 +96,36 @@ static int register_device(struct scullpm_device *d, dev_t devt)
 	if (err)
 		return err;
 
+	/* device attributes */
+	err = device_create_file(&d->ldd.dev, &major_attr);
+	if (err)
+		goto unregister;
+	err = device_create_file(&d->ldd.dev, &minor_attr);
+	if (err) {
+		device_remove_file(&d->ldd.dev, &major_attr);
+		goto unregister;
+	}
+
 	/* register in the char dev subsystem */
 	cdev_init(&d->cdev, &fops);
 	err = cdev_add(&d->cdev, devt, 1);
 	if (err)
-		unregister_ldd_device(&d->ldd);
+		goto remove_attribute;
 
+	return 0;
+remove_attribute:
+	device_remove_file(&d->ldd.dev, &major_attr);
+	device_remove_file(&d->ldd.dev, &minor_attr);
+unregister:
+	unregister_ldd_device(&d->ldd);
 	return err;
 }
 
 static void unregister_device(struct scullpm_device *d)
 {
 	cdev_del(&d->cdev);
+	device_remove_file(&d->ldd.dev, &major_attr);
+	device_remove_file(&d->ldd.dev, &minor_attr);
 	unregister_ldd_device(&d->ldd);
 }
 
@@ -150,6 +194,6 @@ static void __exit cleanup(void)
 }
 module_exit(cleanup);
 
-MODULE_LICENSE("GPL-2.0");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
 MODULE_DESCRIPTION("scullpm: Page based scull");
