@@ -8,6 +8,7 @@ obj-m += scullp/
 obj-m += ldd/
 obj-m += sculld/
 obj-m += scullcm/
+obj-m += scullpm/
 obj-m += currenttime/
 obj-m += snull/
 
@@ -30,10 +31,11 @@ TARGETS += scullp
 TARGETS += sleepy
 TARGETS += ldd
 TARGETS += sculld
-TARGETS += scullcm
 TARGETS += currenttime
 TARGETS += lspci
 TARGETS += snull
+TARGETS += scullcm
+TARGETS += scullpm
 
 .PHONY: run_tests check kselftest kselftest-clean
 run_tests check: kselftest
