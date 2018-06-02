@@ -7,6 +7,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/kdev_t.h>
+#include <linux/mutex.h>
 
 #include "../ldd/ldd.h"
 
@@ -26,6 +27,7 @@ static struct scullpm_driver {
 
 /* devices */
 static struct scullpm_device {
+	struct mutex		lock;
 	struct cdev		cdev;
 	struct ldd_device	ldd;
 } devices[] = {
@@ -47,11 +49,14 @@ static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *p
 
 static int open(struct inode *i, struct file *f)
 {
+	struct scullpm_device *d = container_of(i->i_cdev, struct scullpm_device, cdev);
+	f->private_data = d;
 	return 0;
 }
 
 static int release(struct inode *i, struct file *f)
 {
+	f->private_data = NULL;
 	return 0;
 }
 
@@ -112,6 +117,7 @@ static int register_device(struct scullpm_device *d, dev_t devt)
 	if (err)
 		goto remove_attribute;
 
+	mutex_init(&d->lock);
 	return 0;
 remove_attribute:
 	device_remove_file(&d->ldd.dev, &major_attr);
