@@ -45,12 +45,12 @@ static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *p
 
 static int open(struct inode *i, struct file *f)
 {
-	return -ENOTTY;
+	return 0;
 }
 
 static int release(struct inode *i, struct file *f)
 {
-	return -ENOTTY;
+	return 0;
 }
 
 static const struct file_operations fops = {
@@ -60,14 +60,28 @@ static const struct file_operations fops = {
 	.release	= release,
 };
 
-static int register_device(struct scullpm_device *d)
+static int register_device(struct scullpm_device *d, dev_t devt)
 {
+	int err;
+
+	/* for /dev/scullpmX */
+	d->ldd.dev.devt = devt;
+	err = register_ldd_device(&d->ldd);
+	if (err)
+		return err;
+
+	/* register in the char dev subsystem */
 	cdev_init(&d->cdev, &fops);
-	return register_ldd_device(&d->ldd);
+	err = cdev_add(&d->cdev, devt, 1);
+	if (err)
+		unregister_ldd_device(&d->ldd);
+
+	return err;
 }
 
 static void unregister_device(struct scullpm_device *d)
 {
+	cdev_del(&d->cdev);
 	unregister_ldd_device(&d->ldd);
 }
 
@@ -98,16 +112,20 @@ static void unregister_driver(struct scullpm_driver *drv)
 
 static int __init init(void)
 {
+	struct scullpm_driver *drv = &scullpm;
 	struct scullpm_device *d, *del;
 	int err;
+	int i;
 
 	pr_info("%s\n", __FUNCTION__);
-	err = register_driver(&scullpm);
+
+	err = register_driver(drv);
 	if (err)
 		return err;
 
-	for (d = devices; d->ldd.name; d++) {
-		err = register_device(d);
+	for (i = 0, d = devices; d->ldd.name; i++, d++) {
+		err = register_device(d, MKDEV(MAJOR(drv->devt),
+					       MINOR(drv->devt)+i));
 		if (err)
 			goto unregister;
 	}
@@ -115,19 +133,20 @@ static int __init init(void)
 unregister:
 	for (del = devices; del != d; del++)
 		unregister_device(del);
-	unregister_driver(&scullpm);
+	unregister_driver(drv);
 	return err;
 }
 module_init(init);
 
 static void __exit cleanup(void)
 {
+	struct scullpm_driver *drv = &scullpm;
 	struct scullpm_device *d;
 
 	pr_info("%s\n", __FUNCTION__);
 	for (d = devices; d->ldd.name; d++)
 		unregister_device(d);
-	unregister_driver(&scullpm);
+	unregister_driver(drv);
 }
 module_exit(cleanup);
 
