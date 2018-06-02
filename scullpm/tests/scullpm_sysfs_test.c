@@ -16,9 +16,14 @@ static int test_sysfs(int *i)
 		const char	*want;
 	} tests[] = {
 		{
-			.name		= "/sys/module/scullpm/initstate file",
+			.name		= "/sys/module/scullpm/initstate: initial state",
 			.filename	= "/sys/module/scullpm/initstate",
 			.want		= "live",
+		},
+		{
+			.name		= "/sys/bus/ldd/drivers/scullpm/version: drvier version",
+			.filename	= "/sys/bus/ldd/drivers/scullpm/version",
+			.want		= "1.0.0",
 		},
 		{ /* sentinel */ },
 	};
@@ -48,6 +53,11 @@ static int test_sysfs(int *i)
 		nl = strchr(buf, '\n');
 		if (nl)
 			*nl = '\0';
+		if (strcmp(buf, t->want)) {
+			printf("FAIL: got='%s', want='%s'\n", buf,
+			       t->want);
+			goto fail_close;
+		}
 		close(fd);
 		puts("PASS");
 		ksft_inc_pass_cnt();
