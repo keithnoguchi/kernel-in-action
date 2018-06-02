@@ -14,6 +14,7 @@ Our beloved [LKD] and [LDD] in action, with the latest kernel.
   - [Ldd](#ldd)
   - [Sculld](#sculld)
   - [Scullcm](#scullcm)
+  - [Scullpm](#scullpm)
   - [/proc/currenttime](#currenttime)
   - [Snull](#snull)
 - [Test](#test)
@@ -422,9 +423,16 @@ air1$
 
 ### Scullcm
 
-[scullcm] is a memory cache based [scull], demonstrated in [LDD Chapter 8]:
+[scullcm] is a memory cache based [scull], demonstrated in [LDD Chapter 8]
 
 [scullcm]: scullcm/main.c
+
+### Scullpm
+
+[scullpm] is a page based [scull], demonstrated in [LDD Chapter 8] and
+[LDD Chapter 15]
+
+[scullpm]: scullpm/main.c
 
 ### currenttime
 
@@ -446,7 +454,7 @@ air1$
 
 ### Snull
 
-[snull] is a virtual network driver, explained in [LDD Chapter 16]:
+[snull] is a virtual network driver, explained in [LDD Chapter 17]:
 
 [snull]: snull/main.c
 
@@ -795,7 +803,8 @@ total 8
 [LDD Chapter 7]:  https://lwn.net/images/pdf/LDD3/ch07.pdf
 [LDD Chapter 8]:  https://lwn.net/images/pdf/LDD3/ch08.pdf
 [LDD Chapter 14]: https://lwn.net/images/pdf/LDD3/ch14.pdf
-[LDD Chapter 16]: https://lwn.net/images/pdf/LDD3/ch16.pdf
+[LDD Chapter 15]: https://lwn.net/images/pdf/LDD3/ch15.pdf
+[LDD Chapter 17]: https://lwn.net/images/pdf/LDD3/ch17.pdf
 [Robert Love]: https://rlove.org/
 [Jonathan Corbet]: http://www.oreilly.com/pub/au/592
 [Alessandro Rubini]: http://www.linux.it/~rubini/
