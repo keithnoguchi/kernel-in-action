@@ -3,6 +3,8 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
 
 #include "../ldd/ldd.h"
 
@@ -21,6 +23,7 @@ static struct scullpm_driver {
 
 /* devices */
 static struct scullpm_device {
+	struct cdev		cdev;
 	struct ldd_device	ldd;
 } devices[] = {
 	{ .ldd.name	= SCULLPM_DEVICE_PREFIX "0" },
@@ -28,8 +31,36 @@ static struct scullpm_device {
 	{ /* sentinel */ },
 };
 
+static ssize_t read(struct file *f, char __user *buf, size_t n, loff_t *pos)
+{
+	return -ENOTTY;
+}
+
+static ssize_t write(struct file *f, const char __user *buf, size_t n, loff_t *pos)
+{
+	return -ENOTTY;
+}
+
+static int open(struct inode *i, struct file *f)
+{
+	return -ENOTTY;
+}
+
+static int release(struct inode *i, struct file *f)
+{
+	return -ENOTTY;
+}
+
+static const struct file_operations fops = {
+	.read		= read,
+	.write		= write,
+	.open		= open,
+	.release	= release,
+};
+
 static int register_device(struct scullpm_device *d)
 {
+	cdev_init(&d->cdev, &fops);
 	return register_ldd_device(&d->ldd);
 }
 
