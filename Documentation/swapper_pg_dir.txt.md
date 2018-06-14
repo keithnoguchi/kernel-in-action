@@ -59,3 +59,30 @@ except the kernel symbol map, as below:
 		next_early_pgt = 0;
 		write_cr3(__sme_pa_nodebug(early_top_pgt));
 	}
+
+Usage
+-----
+swapper_page_dir is referenced through the mm field of the task structure.
+When the process is forked, task->mm->pgd is initialized by mm_init() through
+mm_alloc_pgd(), which ultimately calls pgd_ctor() defined in
+arch/x86/mm/pgtable.c, as shown below:
+
+	static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
+	{
+		/* If the pgd points to a shared pagetable level (either the
+		   ptes in non-PAE, or shared PMD in PAE), then just copy the
+		   references from swapper_pg_dir. */
+		if (CONFIG_PGTABLE_LEVELS == 2 ||
+		    (CONFIG_PGTABLE_LEVELS == 3 && SHARED_KERNEL_PMD) ||
+		    CONFIG_PGTABLE_LEVELS >= 4) {
+			clone_pgd_range(pgd + KERNEL_PGD_BOUNDARY,
+					swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+					KERNEL_PGD_PTRS);
+		}
+
+		/* list required to sync kernel mapping updates */
+		if (!SHARED_KERNEL_PMD) {
+			pgd_set_mm(pgd, mm);
+			pgd_list_add(pgd);
+		}
+	}
