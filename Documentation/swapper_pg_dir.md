@@ -15,7 +15,7 @@ Courtecy to Gorman's [MM book].
 
 Definition
 ----------
-inside arch/x86/include/asm/pgtable_64.h, swapper_pg_dir is defined
+inside [arch/x86/include/asm/pgtable_64.h], swapper_pg_dir is defined
 to point to the init_top_pdt[] array.
 
 	extern pgd_t init_top_pgt[];
@@ -24,7 +24,7 @@ to point to the init_top_pdt[] array.
 
 pgd_t type
 ----------
-pgd_t is typedefed as below in arch/x86/include/asm/pgtable_types.h
+pgd_t is typedefed as below in [arch/x86/include/asm/pgtable_types.h]
 
 	typedef struct { pgdval_t pgd; } pgd_t;
 
@@ -49,7 +49,7 @@ https://lwn.net/Articles/117749/
 Initialization
 --------------
 init_top_pgt array is initialized in x86_64_start_kernel() function,
-the very early stage of the initialization, as in arch/x86/kernel/head64.c:
+the very early stage of the initialization, as in [arch/x86/kernel/head64.c]:
 
 	/* Kill off the identify-map trampoline */
 	reset_early_page_tables();
@@ -75,12 +75,12 @@ Usage
 
 ### Kernel
 
-`pgd_offset_k()` macro, defined in `arch/x86/include/asm/pgtable.h` provide
+`pgd_offset_k()` macro, defined in [arch/x86/include/asm/pgtable.h] provide
 the easy access to the kernel PGD, page global directory, as below:
 
 	#define pgd_offset_k(address) pgd_offset(&init_mm, (address))
 
-and `init_mm` is initialized in `mm/init-mm.c` as below:
+and `init_mm` is initialized in [mm/init-mm.c] as below:
 
 	struct mm_struct init_mm = {
 	        .mm_rb          = RB_ROOT,
@@ -101,7 +101,7 @@ Yeah, `swapper_pg_dir` is right there! :)
 swapper_page_dir is referenced through the mm field of the task structure.
 When the process is forked, task->mm->pgd is initialized by mm_init() through
 mm_alloc_pgd(), which ultimately calls pgd_ctor() defined in
-arch/x86/mm/pgtable.c, as shown below:
+[arch/x86/mm/pgtable.c], as shown below:
 
 	static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
 	{
@@ -122,3 +122,10 @@ arch/x86/mm/pgtable.c, as shown below:
 			pgd_list_add(pgd);
 		}
 	}
+
+[arch/x86/include/asm/pgtable.h]: https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/pgtable.h
+[arch/x86/include/asm/pgtable_64.h]: https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/pgtable_64.h
+[arch/x86/include/asm/pgtable_types.h]: https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/pgtable_types.h
+[arch/x86/kernel/head64.c]: https://github.com/torvalds/linux/blob/master/arch/x86/kernel/head64.c
+[arch/x86/mm/pgtable.c]: https://github.com/torvalds/linux/blob/master/arch/x86/mm/pgtable.c
+[mm/init-mm.c]: https://github.com/torvalds/linux/blob/master/mm/init-mm.c
