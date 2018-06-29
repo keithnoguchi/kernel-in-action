@@ -3,6 +3,16 @@ swapper_pg_dir in x86-64
 This document explores how swapper_pg_dir usage and the purpose in x86-64
 architecture, referenced by the Linux kernel version 4.17.1 source code.
 
+Big Picture
+-----------
+
+[![Big Picture]](https://www.kernel.org/doc/gorman/html/understand/understand006.html)
+
+Courtecy to Gorman's [MM book].
+
+[Big Picture]: https://www.kernel.org/doc/gorman/html/understand/understand-html006.png
+[MM book]: https://www.kernel.org/doc/gorman/html/understand/index.html
+
 Definition
 ----------
 inside arch/x86/include/asm/pgtable_64.h, swapper_pg_dir is defined
