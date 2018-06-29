@@ -2,6 +2,7 @@
 .tmp_versions/
 Module.symvers
 modules.order
+cscope.*
 */*.cmd
 */*.o
 */*.o.d
