@@ -62,6 +62,32 @@ except the kernel symbol map, as below:
 
 Usage
 -----
+
+### Kernel
+
+`pgd_offset_k()` macro, defined in `arch/x86/include/asm/pgtable.h` provide
+the easy access to the kernel PGD, page global directory, as below:
+
+	#define pgd_offset_k(address) pgd_offset(&init_mm, (address))
+
+and `init_mm` is initialized in `mm/init-mm.c` as below:
+
+	struct mm_struct init_mm = {
+	        .mm_rb          = RB_ROOT,
+	        .pgd            = swapper_pg_dir,
+	        .mm_users       = ATOMIC_INIT(2),
+	        .mm_count       = ATOMIC_INIT(1),
+	        .mmap_sem       = __RWSEM_INITIALIZER(init_mm.mmap_sem),
+		.page_table_lock =  __SPIN_LOCK_UNLOCKED(init_mm.page_table_lock),
+	        .mmlist         = LIST_HEAD_INIT(init_mm.mmlist),
+	        .user_ns        = &init_user_ns,
+	        INIT_MM_CONTEXT(init_mm)
+	};
+
+Yeah, `swapper_pg_dir` is right there! :)
+
+### User Process
+
 swapper_page_dir is referenced through the mm field of the task structure.
 When the process is forked, task->mm->pgd is initialized by mm_init() through
 mm_alloc_pgd(), which ultimately calls pgd_ctor() defined in
