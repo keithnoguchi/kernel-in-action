@@ -26,8 +26,9 @@ unload:
 	-@for MODULE in $(patsubst %/,%,$(obj-m)); do modprobe -r $$MODULE; done
 reload: load
 
-TARGETS = scull
-TARGETS += scullp
+# Disable scull, as it doesn't have ioctl support, yet.
+#TARGETS = scull
+TARGETS = scullp
 TARGETS += sleepy
 TARGETS += ldd
 TARGETS += sculld
