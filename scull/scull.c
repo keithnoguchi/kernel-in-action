@@ -35,5 +35,5 @@ static void scull_exit(void)
 }
 module_exit(scull_exit);
 
-MODULE_LICENSE("GPL-2.0");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kei Nohguchi <kei@nohguchi.com>");
